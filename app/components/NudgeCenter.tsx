@@ -27,10 +27,10 @@ const dismissForToday = (reminderId: string) => {
 };
 
 const severityStyles: Record<string, string> = {
-  info: "border-slate-200/60 bg-slate-50/50 text-slate-700 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-200",
-  warn: "border-amber-200/60 bg-amber-50/50 text-amber-700 dark:border-amber-600/40 dark:bg-amber-900/20 dark:text-amber-200",
+  info: "border-[color:var(--border)] bg-[color:var(--surface2)] text-[color:var(--text)]",
+  warn: "border-[color:var(--warn)]/30 bg-[color:var(--warn)]/12 text-[color:var(--warn)]",
   danger:
-    "border-rose-200/70 bg-rose-50/60 text-rose-700 dark:border-rose-600/40 dark:bg-rose-900/20 dark:text-rose-200",
+    "border-[color:var(--danger)]/30 bg-[color:var(--danger)]/12 text-[color:var(--danger)]",
 };
 
 export default function NudgeCenter() {

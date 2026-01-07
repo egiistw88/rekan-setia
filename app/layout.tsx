@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/app/components/Providers";
-import BottomNav from "@/app/components/BottomNav";
+import AppShell from "@/app/components/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,13 +39,10 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-dvh bg-[color:var(--background)] text-[color:var(--foreground)] antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} min-h-dvh bg-[color:var(--bg)] text-[color:var(--text)] antialiased`}
       >
         <Providers>
-          <div className="flex min-h-dvh flex-col">
-            {children}
-            <BottomNav />
-          </div>
+          <AppShell>{children}</AppShell>
         </Providers>
       </body>
     </html>
