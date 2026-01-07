@@ -14,7 +14,11 @@ npm install
 npm run dev
 ```
 
-Buka `http://localhost:3000`.
+Buka `http://localhost:3005`.
+
+## Menjalankan lewat VS Code Task
+
+Gunakan menu `Terminal -> Run Task -> Rekan Setia Dev` untuk membersihkan proses Node, menghapus `.next`, lalu menjalankan server dev.
 
 ## Build dan start produksi
 

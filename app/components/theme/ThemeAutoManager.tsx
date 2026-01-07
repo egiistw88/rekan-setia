@@ -2,47 +2,58 @@
 
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
-import {
-  loadThemeSettings,
-  resolveTheme,
-  THEME_SETTINGS_EVENT,
-  THEME_SETTINGS_KEY,
-} from "@/app/lib/theme-settings";
+import type { SettingsRecord } from "@/lib/db";
+import { useSettings } from "@/lib/settings";
 
 const FIVE_MINUTES = 5 * 60 * 1000;
 
+const resolveTheme = (
+  theme: SettingsRecord["theme"],
+  date: Date = new Date(),
+) => {
+  if (theme.themeMode === "ALWAYS_DARK") {
+    return "dark";
+  }
+  if (theme.themeMode === "ALWAYS_LIGHT") {
+    return "light";
+  }
+
+  const nowMinutes = date.getHours() * 60 + date.getMinutes();
+  const [darkHours, darkMinutes] = theme.darkStart.split(":").map(Number);
+  const [lightHours, lightMinutes] = theme.lightStart.split(":").map(Number);
+  const darkStart = darkHours * 60 + darkMinutes;
+  const lightStart = lightHours * 60 + lightMinutes;
+
+  if (darkStart === lightStart) {
+    return "dark";
+  }
+
+  if (darkStart < lightStart) {
+    return nowMinutes >= darkStart && nowMinutes < lightStart ? "dark" : "light";
+  }
+
+  return nowMinutes >= darkStart || nowMinutes < lightStart ? "dark" : "light";
+};
+
 export default function ThemeAutoManager() {
   const { setTheme } = useTheme();
+  const settings = useSettings();
 
   useEffect(() => {
+    if (!settings) {
+      setTheme("dark");
+      return;
+    }
+
     const applyTheme = () => {
-      const settings = loadThemeSettings();
-      setTheme(resolveTheme(settings));
+      setTheme(resolveTheme(settings.theme));
     };
 
     applyTheme();
-
     const intervalId = window.setInterval(applyTheme, FIVE_MINUTES);
 
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === THEME_SETTINGS_KEY) {
-        applyTheme();
-      }
-    };
-
-    const handleCustom = () => {
-      applyTheme();
-    };
-
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener(THEME_SETTINGS_EVENT, handleCustom);
-
-    return () => {
-      window.clearInterval(intervalId);
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener(THEME_SETTINGS_EVENT, handleCustom);
-    };
-  }, [setTheme]);
+    return () => window.clearInterval(intervalId);
+  }, [setTheme, settings]);
 
   return null;
 }

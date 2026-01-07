@@ -1,13 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  DEFAULT_THEME_SETTINGS,
-  ThemeMode,
-  ThemeSettings,
-  loadThemeSettings,
-  saveThemeSettings,
-} from "@/app/lib/theme-settings";
+import { useEffect, useMemo, useState } from "react";
+import type { ThemeMode } from "@/lib/db";
+import { updateSettings, useSettings } from "@/lib/settings";
 
 const MODE_OPTIONS: { value: ThemeMode; label: string; hint: string }[] = [
   {
@@ -28,17 +23,35 @@ const MODE_OPTIONS: { value: ThemeMode; label: string; hint: string }[] = [
 ];
 
 export default function ThemeSettingsPanel() {
-  const [settings, setSettings] = useState<ThemeSettings>(
-    DEFAULT_THEME_SETTINGS,
-  );
+  const settings = useSettings();
+  const [draft, setDraft] = useState<{
+    themeMode: ThemeMode;
+    darkStart: string;
+    lightStart: string;
+  } | null>(null);
 
   useEffect(() => {
-    setSettings(loadThemeSettings());
-  }, []);
+    if (settings) {
+      setDraft({ ...settings.theme });
+    }
+  }, [settings]);
 
-  const updateSettings = (next: ThemeSettings) => {
-    setSettings(next);
-    saveThemeSettings(next);
+  const isDirty = useMemo(() => {
+    if (!settings || !draft) {
+      return false;
+    }
+    return (
+      settings.theme.themeMode !== draft.themeMode ||
+      settings.theme.darkStart !== draft.darkStart ||
+      settings.theme.lightStart !== draft.lightStart
+    );
+  }, [draft, settings]);
+
+  const handleSave = async () => {
+    if (!draft) {
+      return;
+    }
+    await updateSettings({ theme: { ...draft } });
   };
 
   return (
@@ -58,9 +71,17 @@ export default function ThemeSettingsPanel() {
                 name="theme-mode"
                 className="mt-1"
                 value={option.value}
-                checked={settings.mode === option.value}
+                checked={draft?.themeMode === option.value}
                 onChange={() =>
-                  updateSettings({ ...settings, mode: option.value })
+                  setDraft((prev) =>
+                    prev
+                      ? { ...prev, themeMode: option.value }
+                      : {
+                          themeMode: option.value,
+                          darkStart: "18:00",
+                          lightStart: "06:00",
+                        },
+                  )
                 }
               />
               <span>
@@ -76,36 +97,56 @@ export default function ThemeSettingsPanel() {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-        <h2 className="text-sm font-semibold text-[color:var(--foreground)]">
-          Jadwal gelap
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="space-y-2 text-sm text-[color:var(--muted)]">
-            <span>Mulai gelap</span>
-            <input
-              type="time"
-              value={settings.darkStart}
-              onChange={(event) =>
-                updateSettings({ ...settings, darkStart: event.target.value })
-              }
-              className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
-            />
-          </label>
-          <label className="space-y-2 text-sm text-[color:var(--muted)]">
-            <span>Mulai terang</span>
-            <input
-              type="time"
-              value={settings.lightStart}
-              onChange={(event) =>
-                updateSettings({ ...settings, lightStart: event.target.value })
-              }
-              className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
-            />
-          </label>
-        </div>
+      {draft?.themeMode === "AUTO_TIME" ? (
+        <section className="space-y-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+          <h2 className="text-sm font-semibold text-[color:var(--foreground)]">
+            Jadwal gelap
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="space-y-2 text-sm text-[color:var(--muted)]">
+              <span>Mulai gelap</span>
+              <input
+                type="time"
+                value={draft.darkStart}
+                onChange={(event) =>
+                  setDraft((prev) =>
+                    prev ? { ...prev, darkStart: event.target.value } : prev,
+                  )
+                }
+                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+              />
+            </label>
+            <label className="space-y-2 text-sm text-[color:var(--muted)]">
+              <span>Mulai terang</span>
+              <input
+                type="time"
+                value={draft.lightStart}
+                onChange={(event) =>
+                  setDraft((prev) =>
+                    prev ? { ...prev, lightStart: event.target.value } : prev,
+                  )
+                }
+                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+              />
+            </label>
+          </div>
+          <p className="text-xs text-[color:var(--muted)]">
+            Saya bebas mengatur ulang jam agar ritme tetap nyaman.
+          </p>
+        </section>
+      ) : null}
+
+      <section className="flex flex-col gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!draft || !isDirty}
+          className="rounded-xl bg-[color:var(--accent)] px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Simpan
+        </button>
         <p className="text-xs text-[color:var(--muted)]">
-          Saya bebas mengatur ulang jam agar ritme tetap nyaman.
+          Saya atur ini supaya aplikasi mengikuti ritme hidup saya.
         </p>
       </section>
     </div>
