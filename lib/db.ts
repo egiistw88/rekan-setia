@@ -46,25 +46,40 @@ export type SettingsRecord = {
 
 export type DailyLogRecord = {
   dateKey: string;
-  createdAt: string;
+  sleepHours: number;
+  mealsCount: number;
+  breathSessions: number;
+  dropModeRuns: number;
+  moodScore?: number;
+  subuhDone: boolean;
+  ritualDone: boolean;
+  freezeMode?: boolean;
   updatedAt: string;
 };
 
 export type FinanceLogRecord = {
   dateKey: string;
-  createdAt: string;
+  incomeOjol: number;
+  expenseMakan: number;
+  expenseBensin: number;
+  topupOjol: number;
+  rokokKopi: number;
+  otherExpense: number;
+  cashOnHandTonight?: number;
   updatedAt: string;
 };
 
 export type RelationLogRecord = {
   dateKey: string;
-  createdAt: string;
+  wifeNote?: string;
+  motherContactDone?: boolean;
   updatedAt: string;
 };
 
 export type CareerLogRecord = {
   dateKey: string;
-  createdAt: string;
+  clientChatsSent: number;
+  designMinutes: number;
   updatedAt: string;
 };
 
