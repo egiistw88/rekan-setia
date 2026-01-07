@@ -10,7 +10,7 @@ import {
   type FinanceLogRecord,
   type RelationLogRecord,
 } from "@/lib/db";
-import { getJakartaDateKey } from "@/lib/time";
+import { getJakartaDateKey, getJakartaDateTime } from "@/lib/time";
 
 type DailyForm = {
   sleepHours: number;
@@ -74,20 +74,53 @@ const defaultCareer: CareerForm = {
   designMinutes: 0,
 };
 
-const numberValue = (value: string) => {
+const floatValue = (value: string) => {
+  if (value.trim() === "") {
+    return 0;
+  }
   const parsed = Number(value);
   return Number.isNaN(parsed) ? 0 : parsed;
 };
 
-const optionalNumberValue = (value: string) => {
+const intValue = (value: string) => {
+  if (value.trim() === "") {
+    return 0;
+  }
+  const parsed = Math.round(Number(value));
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const clampInt = (value: number, min: number, max: number) => {
+  return Math.min(max, Math.max(min, value));
+};
+
+const nonNegativeInt = (value: string) => {
+  return Math.max(0, intValue(value));
+};
+
+const optionalIntValue = (value: string) => {
   if (value.trim() === "") {
     return undefined;
   }
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? undefined : parsed;
+  const parsed = Math.round(Number(value));
+  if (Number.isNaN(parsed)) {
+    return undefined;
+  }
+  return Math.max(0, parsed);
 };
 
-const formatTime = (iso?: string) => {
+const optionalClampedInt = (value: string, min: number, max: number) => {
+  const parsed = optionalIntValue(value);
+  if (parsed === undefined) {
+    return undefined;
+  }
+  return clampInt(parsed, min, max);
+};
+
+const formatTime = (iso?: string, wib?: string) => {
+  if (wib) {
+    return wib;
+  }
   if (!iso) {
     return "";
   }
@@ -180,7 +213,17 @@ export default function InputPage() {
           designMinutes: careerLog?.designMinutes ?? 0,
         });
 
-        const lastUpdated = [
+        const lastUpdatedWib = [
+          dailyLog?.updatedAtWib,
+          financeLog?.updatedAtWib,
+          relationLog?.updatedAtWib,
+          careerLog?.updatedAtWib,
+        ]
+          .filter(Boolean)
+          .sort()
+          .pop();
+
+        const lastUpdatedIso = [
           dailyLog?.updatedAt,
           financeLog?.updatedAt,
           relationLog?.updatedAt,
@@ -190,7 +233,9 @@ export default function InputPage() {
           .sort()
           .pop();
 
-        setLastSavedAt(formatTime(lastUpdated));
+        setLastSavedAt(
+          formatTime(lastUpdatedIso, lastUpdatedWib as string | undefined),
+        );
       } catch (error) {
         console.error(error);
         if (active) {
@@ -240,55 +285,64 @@ export default function InputPage() {
     }
 
     setIsSaving(true);
-    const now = new Date().toISOString();
-
-    const dailyRecord: DailyLogRecord = {
-      dateKey,
-      sleepHours: daily.sleepHours,
-      mealsCount: daily.mealsCount,
-      breathSessions: daily.breathSessions,
-      dropModeRuns: daily.dropModeRuns,
-      moodScore: optionalNumberValue(daily.moodScore),
-      subuhDone: daily.subuhDone,
-      ritualDone: daily.ritualDone,
-      freezeMode: daily.freezeMode,
-      updatedAt: now,
-    };
-
-    const financeRecord: FinanceLogRecord = {
-      dateKey,
-      incomeOjol: finance.incomeOjol,
-      expenseMakan: finance.expenseMakan,
-      expenseBensin: finance.expenseBensin,
-      topupOjol: finance.topupOjol,
-      rokokKopi: finance.rokokKopi,
-      otherExpense: finance.otherExpense,
-      cashOnHandTonight: optionalNumberValue(finance.cashOnHandTonight),
-      updatedAt: now,
-    };
-
-    const relationRecord: RelationLogRecord = {
-      dateKey,
-      wifeNote: relation.wifeNote.trim() || undefined,
-      motherContactDone: relation.motherContactDone,
-      updatedAt: now,
-    };
-
-    const careerRecord: CareerLogRecord = {
-      dateKey,
-      clientChatsSent: career.clientChatsSent,
-      designMinutes: career.designMinutes,
-      updatedAt: now,
-    };
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const updatedAtWib = getJakartaDateTime(now);
 
     try {
+      const existingDaily = await db.dailyLogs.get(dateKey);
+
+      const dailyRecord: DailyLogRecord = {
+        dateKey,
+        sleepHours: daily.sleepHours,
+        mealsCount: daily.mealsCount,
+        breathSessions: daily.breathSessions,
+        dropModeRuns: daily.dropModeRuns,
+        moodScore: optionalClampedInt(daily.moodScore, 1, 5),
+        subuhDone: daily.subuhDone,
+        ritualDone: daily.ritualDone,
+        freezeMode: daily.freezeMode,
+        updatedAt: nowIso,
+        updatedAtWib,
+        planChecks: existingDaily?.planChecks,
+      };
+
+      const financeRecord: FinanceLogRecord = {
+        dateKey,
+        incomeOjol: nonNegativeInt(String(finance.incomeOjol)),
+        expenseMakan: nonNegativeInt(String(finance.expenseMakan)),
+        expenseBensin: nonNegativeInt(String(finance.expenseBensin)),
+        topupOjol: nonNegativeInt(String(finance.topupOjol)),
+        rokokKopi: nonNegativeInt(String(finance.rokokKopi)),
+        otherExpense: nonNegativeInt(String(finance.otherExpense)),
+        cashOnHandTonight: optionalIntValue(finance.cashOnHandTonight),
+        updatedAt: nowIso,
+        updatedAtWib,
+      };
+
+      const relationRecord: RelationLogRecord = {
+        dateKey,
+        wifeNote: relation.wifeNote.trim() || undefined,
+        motherContactDone: relation.motherContactDone,
+        updatedAt: nowIso,
+        updatedAtWib,
+      };
+
+      const careerRecord: CareerLogRecord = {
+        dateKey,
+        clientChatsSent: clampInt(career.clientChatsSent, 0, 3),
+        designMinutes: clampInt(career.designMinutes, 0, 60),
+        updatedAt: nowIso,
+        updatedAtWib,
+      };
+
       await Promise.all([
         db.dailyLogs.put(dailyRecord),
         db.financeLogs.put(financeRecord),
         db.relationLogs.put(relationRecord),
         db.careerLogs.put(careerRecord),
       ]);
-      setLastSavedAt(formatTime(now));
+      setLastSavedAt(formatTime(nowIso, updatedAtWib));
       showToast("Saya sudah menutup hari dengan rapi.");
     } catch (error) {
       console.error(error);
@@ -332,7 +386,7 @@ export default function InputPage() {
                 onChange={(event) =>
                   setDaily((prev) => ({
                     ...prev,
-                    sleepHours: numberValue(event.target.value),
+                    sleepHours: Math.max(0, floatValue(event.target.value)),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
@@ -347,7 +401,7 @@ export default function InputPage() {
                 onChange={(event) =>
                   setDaily((prev) => ({
                     ...prev,
-                    mealsCount: numberValue(event.target.value),
+                    mealsCount: nonNegativeInt(event.target.value),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
@@ -362,7 +416,7 @@ export default function InputPage() {
                 onChange={(event) =>
                   setDaily((prev) => ({
                     ...prev,
-                    breathSessions: numberValue(event.target.value),
+                    breathSessions: nonNegativeInt(event.target.value),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
@@ -377,7 +431,7 @@ export default function InputPage() {
                 onChange={(event) =>
                   setDaily((prev) => ({
                     ...prev,
-                    dropModeRuns: numberValue(event.target.value),
+                    dropModeRuns: nonNegativeInt(event.target.value),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
@@ -490,7 +544,7 @@ export default function InputPage() {
                 onChange={(event) =>
                   setFinance((prev) => ({
                     ...prev,
-                    incomeOjol: numberValue(event.target.value),
+                    incomeOjol: nonNegativeInt(event.target.value),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
@@ -505,7 +559,7 @@ export default function InputPage() {
                 onChange={(event) =>
                   setFinance((prev) => ({
                     ...prev,
-                    expenseMakan: numberValue(event.target.value),
+                    expenseMakan: nonNegativeInt(event.target.value),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
@@ -520,7 +574,7 @@ export default function InputPage() {
                 onChange={(event) =>
                   setFinance((prev) => ({
                     ...prev,
-                    expenseBensin: numberValue(event.target.value),
+                    expenseBensin: nonNegativeInt(event.target.value),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
@@ -535,7 +589,7 @@ export default function InputPage() {
                 onChange={(event) =>
                   setFinance((prev) => ({
                     ...prev,
-                    topupOjol: numberValue(event.target.value),
+                    topupOjol: nonNegativeInt(event.target.value),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
@@ -550,7 +604,7 @@ export default function InputPage() {
                 onChange={(event) =>
                   setFinance((prev) => ({
                     ...prev,
-                    rokokKopi: numberValue(event.target.value),
+                    rokokKopi: nonNegativeInt(event.target.value),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
@@ -565,7 +619,7 @@ export default function InputPage() {
                 onChange={(event) =>
                   setFinance((prev) => ({
                     ...prev,
-                    otherExpense: numberValue(event.target.value),
+                    otherExpense: nonNegativeInt(event.target.value),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
@@ -601,11 +655,12 @@ export default function InputPage() {
                 type="number"
                 min={0}
                 max={3}
+                step={1}
                 value={career.clientChatsSent}
                 onChange={(event) =>
                   setCareer((prev) => ({
                     ...prev,
-                    clientChatsSent: numberValue(event.target.value),
+                    clientChatsSent: clampInt(intValue(event.target.value), 0, 3),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
@@ -617,11 +672,12 @@ export default function InputPage() {
                 type="number"
                 min={0}
                 max={60}
+                step={5}
                 value={career.designMinutes}
                 onChange={(event) =>
                   setCareer((prev) => ({
                     ...prev,
-                    designMinutes: numberValue(event.target.value),
+                    designMinutes: clampInt(intValue(event.target.value), 0, 60),
                   }))
                 }
                 className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"

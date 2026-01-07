@@ -55,6 +55,8 @@ export type DailyLogRecord = {
   ritualDone: boolean;
   freezeMode?: boolean;
   updatedAt: string;
+  updatedAtWib?: string;
+  planChecks?: Record<string, boolean>;
 };
 
 export type FinanceLogRecord = {
@@ -67,6 +69,7 @@ export type FinanceLogRecord = {
   otherExpense: number;
   cashOnHandTonight?: number;
   updatedAt: string;
+  updatedAtWib?: string;
 };
 
 export type RelationLogRecord = {
@@ -74,6 +77,7 @@ export type RelationLogRecord = {
   wifeNote?: string;
   motherContactDone?: boolean;
   updatedAt: string;
+  updatedAtWib?: string;
 };
 
 export type CareerLogRecord = {
@@ -81,6 +85,7 @@ export type CareerLogRecord = {
   clientChatsSent: number;
   designMinutes: number;
   updatedAt: string;
+  updatedAtWib?: string;
 };
 
 class RekanSetiaDB extends Dexie {
