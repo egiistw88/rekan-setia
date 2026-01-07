@@ -291,6 +291,8 @@ export default function InputPage() {
 
     try {
       const existingDaily = await db.dailyLogs.get(dateKey);
+      const existingFinance = await db.financeLogs.get(dateKey);
+      const existingRelation = await db.relationLogs.get(dateKey);
 
       const dailyRecord: DailyLogRecord = {
         dateKey,
@@ -318,11 +320,17 @@ export default function InputPage() {
         cashOnHandTonight: optionalIntValue(finance.cashOnHandTonight),
         updatedAt: nowIso,
         updatedAtWib,
+        freezeModeApplied: existingFinance?.freezeModeApplied,
+        note: existingFinance?.note,
       };
 
       const relationRecord: RelationLogRecord = {
         dateKey,
         wifeNote: relation.wifeNote.trim() || undefined,
+        lastTemplateId: existingRelation?.lastTemplateId,
+        ritualDurationMin: existingRelation?.ritualDurationMin,
+        ritualCompletedAtWib: existingRelation?.ritualCompletedAtWib,
+        wifeMood: existingRelation?.wifeMood,
         motherContactDone: relation.motherContactDone,
         updatedAt: nowIso,
         updatedAtWib,

@@ -70,11 +70,17 @@ export type FinanceLogRecord = {
   cashOnHandTonight?: number;
   updatedAt: string;
   updatedAtWib?: string;
+  freezeModeApplied?: boolean;
+  note?: string;
 };
 
 export type RelationLogRecord = {
   dateKey: string;
   wifeNote?: string;
+  lastTemplateId?: string;
+  ritualDurationMin?: number;
+  ritualCompletedAtWib?: string;
+  wifeMood?: "ringan" | "biasa" | "berat";
   motherContactDone?: boolean;
   updatedAt: string;
   updatedAtWib?: string;

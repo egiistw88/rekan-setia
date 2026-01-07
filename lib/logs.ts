@@ -2,6 +2,7 @@ import {
   db,
   type CareerLogRecord,
   type DailyLogRecord,
+  type FinanceLogRecord,
   type RelationLogRecord,
 } from "@/lib/db";
 import { getJakartaDateKey, getJakartaDateTime } from "@/lib/time";
@@ -11,6 +12,9 @@ type DailyLogPatch = Partial<
 >;
 type CareerLogPatch = Partial<
   Omit<CareerLogRecord, "dateKey" | "updatedAt" | "updatedAtWib">
+>;
+type FinanceLogPatch = Partial<
+  Omit<FinanceLogRecord, "dateKey" | "updatedAt" | "updatedAtWib">
 >;
 type RelationLogPatch = Partial<
   Omit<RelationLogRecord, "dateKey" | "updatedAt" | "updatedAtWib">
@@ -57,12 +61,34 @@ const buildCareerDefaults = (
   updatedAtWib: timestamps.updatedAtWib,
 });
 
+const buildFinanceDefaults = (
+  dateKey: string,
+  timestamps: ReturnType<typeof getTimestamps>,
+): FinanceLogRecord => ({
+  dateKey,
+  incomeOjol: 0,
+  expenseMakan: 0,
+  expenseBensin: 0,
+  topupOjol: 0,
+  rokokKopi: 0,
+  otherExpense: 0,
+  cashOnHandTonight: undefined,
+  updatedAt: timestamps.updatedAt,
+  updatedAtWib: timestamps.updatedAtWib,
+  freezeModeApplied: false,
+  note: "",
+});
+
 const buildRelationDefaults = (
   dateKey: string,
   timestamps: ReturnType<typeof getTimestamps>,
 ): RelationLogRecord => ({
   dateKey,
   wifeNote: "",
+  lastTemplateId: undefined,
+  ritualDurationMin: undefined,
+  ritualCompletedAtWib: undefined,
+  wifeMood: undefined,
   motherContactDone: false,
   updatedAt: timestamps.updatedAt,
   updatedAtWib: timestamps.updatedAtWib,
@@ -102,6 +128,22 @@ export const upsertCareerLogPatch = async (
     updatedAtWib: timestamps.updatedAtWib,
   };
   await db.careerLogs.put(next);
+};
+
+export const upsertFinanceLogPatch = async (
+  dateKey: string,
+  patch: FinanceLogPatch,
+) => {
+  const timestamps = getTimestamps();
+  const existing = await db.financeLogs.get(dateKey);
+  const base = existing ?? buildFinanceDefaults(dateKey, timestamps);
+  const next: FinanceLogRecord = {
+    ...base,
+    ...patch,
+    updatedAt: timestamps.updatedAt,
+    updatedAtWib: timestamps.updatedAtWib,
+  };
+  await db.financeLogs.put(next);
 };
 
 export const upsertRelationLogPatch = async (
