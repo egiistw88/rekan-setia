@@ -1000,6 +1000,55 @@ const computePlanTomorrow = ({
     plan.push(item);
   };
 
+  const ritualPreferred = "Pertahankan ritual 7 menit besok";
+  const normalizePlanKey = (item: string) => {
+    const cleaned = item
+      .toLowerCase()
+      .replace(/[()]/g, " ")
+      .replace(/[.,:;!?]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (cleaned.includes("ritual") && cleaned.includes("7") && cleaned.includes("menit")) {
+      return "ritual-7";
+    }
+    return cleaned;
+  };
+
+  const pickPreferredRitual = (existing: string, candidate: string) => {
+    const preferredLower = ritualPreferred.toLowerCase();
+    const existingIsPreferred = existing.toLowerCase().includes(preferredLower);
+    const candidateIsPreferred = candidate.toLowerCase().includes(preferredLower);
+    if (candidateIsPreferred && !existingIsPreferred) {
+      return candidate;
+    }
+    if (existingIsPreferred) {
+      return existing;
+    }
+    return existing;
+  };
+
+  const dedupePlanItems = (items: string[]) => {
+    const order: string[] = [];
+    const map = new Map<string, string>();
+    for (const rawItem of items) {
+      const trimmed = rawItem.trim();
+      if (!trimmed) {
+        continue;
+      }
+      const key = normalizePlanKey(trimmed);
+      if (!map.has(key)) {
+        map.set(key, trimmed);
+        order.push(key);
+        continue;
+      }
+      if (key === "ritual-7") {
+        const existing = map.get(key) ?? trimmed;
+        map.set(key, pickPreferredRitual(existing, trimmed));
+      }
+    }
+    return order.map((key) => map.get(key)).filter(Boolean) as string[];
+  };
+
   const statusMap: Record<PrimaryDriver, DomainStatus> = {
     STABILITY: stability,
     FINANCE: finance,
@@ -1062,7 +1111,8 @@ const computePlanTomorrow = ({
     }
   }
 
-  return plan.slice(0, mode === "SELAMAT" ? 2 : 3);
+  const dedupedPlan = dedupePlanItems(plan);
+  return dedupedPlan.slice(0, mode === "SELAMAT" ? 2 : 3);
 };
 
 export const getAssessmentForToday = async (): Promise<DailyAssessment> => {

@@ -19,7 +19,7 @@ export default function Card({
   return (
     <div
       {...rest}
-      className={`rounded-[var(--radius-lg)] border border-[color:var(--border)] p-4 ${
+      className={`rounded-[var(--radius-lg)] border border-[color:var(--border)] p-4 shadow-[var(--shadow)] ${
         toneStyles[tone]
       } ${className ?? ""}`}
     >

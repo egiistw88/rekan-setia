@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import IconButton from "@/app/components/ui/IconButton";
 
 type BottomSheetProps = {
@@ -14,6 +17,22 @@ export default function BottomSheet({
   title,
   children,
 }: BottomSheetProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    panelRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
   if (!open) {
     return null;
   }
@@ -29,7 +48,9 @@ export default function BottomSheet({
       <div
         role="dialog"
         aria-modal="true"
-        className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-[560px] rounded-t-[var(--radius-lg)] border border-[color:var(--border)] bg-[color:var(--surface)] p-5 pb-8 shadow-xl"
+        ref={panelRef}
+        tabIndex={-1}
+        className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-[560px] rounded-t-[var(--radius-lg)] border border-[color:var(--border)] bg-[color:var(--surface)] p-5 pb-8 shadow-[var(--shadow)]"
       >
         <div className="mb-4 flex items-center justify-between">
           <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">

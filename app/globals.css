@@ -1,18 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f6f4ef;
-  --surface: #ffffff;
-  --surface2: #f0ede6;
-  --text: #141414;
-  --muted: #6b7280;
-  --border: #e5dfd6;
-  --accent: #f97316;
-  --danger: #e11d48;
-  --warn: #f59e0b;
-  --ok: #16a34a;
-  --radius-lg: 24px;
-  --radius-md: 16px;
+  --bg: #0b0f14;
+  --surface: #111826;
+  --surface2: #151f31;
+  --text: #e6edf7;
+  --muted: #9aa8bd;
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: #7aa2ff;
+  --ok: #57d38c;
+  --warn: #f3c969;
+  --danger: #ff6b6b;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --shadow: 0 8px 24px rgba(9, 12, 18, 0.35);
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -24,17 +25,39 @@
   --card: var(--surface);
 }
 
+.light {
+  --bg: #f6f4ef;
+  --surface: #ffffff;
+  --surface2: #f0ede6;
+  --text: #141414;
+  --muted: #6b7280;
+  --border: rgba(15, 23, 42, 0.08);
+  --accent: #5b7cff;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+}
+
 .dark {
-  --bg: #0b1118;
-  --surface: #141b26;
-  --surface2: #1b2431;
-  --text: #f4f6fb;
-  --muted: #9aa4b2;
-  --border: #263142;
-  --accent: #f8b26a;
-  --danger: #fb7185;
-  --warn: #fbbf24;
-  --ok: #34d399;
+  --bg: #0b0f14;
+  --surface: #111826;
+  --surface2: #151f31;
+  --text: #e6edf7;
+  --muted: #9aa8bd;
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: #7aa2ff;
+  --ok: #57d38c;
+  --warn: #f3c969;
+  --danger: #ff6b6b;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --shadow: 0 8px 24px rgba(9, 12, 18, 0.35);
   --background: var(--bg);
   --foreground: var(--text);
   --card: var(--surface);
@@ -63,4 +86,9 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+a,
+button {
+  outline-color: var(--accent);
 }

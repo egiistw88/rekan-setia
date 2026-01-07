@@ -93,7 +93,7 @@ export default function NudgeCenter() {
   };
 
   return (
-    <section className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+    <section className="rounded-[var(--radius-lg)] border border-[color:var(--border)] bg-[color:var(--surface)] p-4 shadow-[var(--shadow)]">
       <div className="flex items-center justify-between">
         <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
           Pengingat saya hari ini

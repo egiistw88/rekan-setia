@@ -15,9 +15,8 @@ import {
 import NudgeCenter from "@/app/components/NudgeCenter";
 import BottomSheet from "@/app/components/ui/BottomSheet";
 import Card from "@/app/components/ui/Card";
-import GhostButton, { GHOST_BUTTON_CLASS } from "@/app/components/ui/GhostButton";
+import IconButton from "@/app/components/ui/IconButton";
 import { PRIMARY_BUTTON_CLASS } from "@/app/components/ui/PrimaryButton";
-import SectionHeader from "@/app/components/ui/SectionHeader";
 
 const OVERALL_COPY: Record<Level, string> = {
   AMAN: "Hari ini saya cukup stabil.",
@@ -50,6 +49,7 @@ function HomeContent() {
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(true);
   const [toast, setToast] = useState("");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const toastTimeout = useRef<number | null>(null);
   const searchParams = useSearchParams();
   const isDebug = searchParams.get("debug") === "1";
@@ -175,15 +175,22 @@ function HomeContent() {
     return { href: "/input", label: "Isi Input Malam" };
   }, [assessment?.overallLevel]);
 
+  const primaryReason =
+    assessment?.overallReasons?.[0] ??
+    (assessment ? getReasonFallback(assessment.overallLevel) : "");
+  const secondaryReason = assessment?.overallReasons?.[1];
+
+  const planItems = assessment?.planTomorrow?.slice(0, 3) ?? [];
+
   return (
     <>
-      <main className="flex w-full flex-1 flex-col gap-6">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-semibold leading-tight text-[color:var(--text)]">
-            Saya tidak perlu kuat hari ini. Saya perlu stabil.
+      <main className="flex w-full flex-1 flex-col gap-5 pb-32">
+        <header className="space-y-1">
+          <h1 className="text-lg font-semibold text-[color:var(--text)]">
+            Rekan Setia
           </h1>
-          <p className="text-base text-[color:var(--muted)]">
-            Ini ruang tenang untuk menata langkah kecil hari ini.
+          <p className="text-sm text-[color:var(--muted)]">
+            Saya menutup hari pelan, tapi pasti.
           </p>
         </header>
 
@@ -206,71 +213,84 @@ function HomeContent() {
         ) : assessment ? (
           <>
             <Card>
-              <SectionHeader title="Status Hari Ini" />
-              <div className="mt-3 flex items-start justify-between gap-4">
-                <p className="text-lg font-semibold text-[color:var(--text)]">
-                  {OVERALL_COPY[assessment.overallLevel]}
-                </p>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${levelTone(
-                    assessment.overallLevel,
-                  )}`}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
+                    Status Hari Ini
+                  </p>
+                  <span
+                    className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${levelTone(
+                      assessment.overallLevel,
+                    )}`}
+                  >
+                    {assessment.overallLevel}
+                  </span>
+                </div>
+                <IconButton
+                  type="button"
+                  onClick={() => setIsSheetOpen(true)}
+                  aria-label="Aksi cepat"
                 >
-                  {assessment.overallLevel}
-                </span>
+                  ...
+                </IconButton>
               </div>
-              <ul className="mt-3 space-y-1 text-base text-[color:var(--muted)]">
-                {assessment.overallReasons.length > 0 ? (
-                  assessment.overallReasons.map((reason, index) => (
-                    <li key={`${index}-${reason}`}>- {reason}</li>
-                  ))
-                ) : (
-                  <li>- {getReasonFallback(assessment.overallLevel)}</li>
-                )}
+              <p className="mt-3 text-sm font-semibold text-[color:var(--text)]">
+                {OVERALL_COPY[assessment.overallLevel]}
+              </p>
+              <ul className="mt-2 space-y-1 text-sm text-[color:var(--muted)]">
+                <li>- {primaryReason}</li>
+                {showDetails && secondaryReason ? (
+                  <li>- {secondaryReason}</li>
+                ) : null}
               </ul>
+              {secondaryReason ? (
+                <button
+                  type="button"
+                  onClick={() => setShowDetails((prev) => !prev)}
+                  className="mt-2 text-xs text-[color:var(--muted)] transition hover:text-[color:var(--text)]"
+                >
+                  {showDetails ? "Tutup" : "Detail"}
+                </button>
+              ) : null}
             </Card>
 
             <Card>
-              <SectionHeader title="Plan Besok" />
-              <ul className="mt-3 space-y-2 text-sm text-[color:var(--text)]">
-                {assessment.planTomorrow.map((item, index) => (
-                  <li key={`${index}-${item}`} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-[color:var(--accent)]"
-                      checked={Boolean(dailyLog?.planChecks?.[item])}
-                      onChange={(event) =>
-                        handlePlanToggle(item, event.target.checked)
-                      }
-                    />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
+                Plan Besok
+              </p>
+              {planItems.length === 0 ? (
+                <p className="mt-3 text-sm text-[color:var(--muted)]">
+                  Saya cukup pegang satu hal kecil besok.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-1 text-sm text-[color:var(--text)]">
+                  {planItems.map((item, index) => (
+                    <li key={`${index}-${item}`} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-[color:var(--accent)]"
+                        checked={Boolean(dailyLog?.planChecks?.[item])}
+                        onChange={(event) =>
+                          handlePlanToggle(item, event.target.checked)
+                        }
+                      />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
               <p className="mt-3 text-xs text-[color:var(--muted)]">
                 Checklist ini untuk saya pegang, bukan untuk menghakimi.
               </p>
             </Card>
 
-            <div className="grid gap-2">
-              <Link
-                href={primaryAction.href}
-                className={`${PRIMARY_BUTTON_CLASS} w-full`}
-              >
-                {primaryAction.label}
-              </Link>
-              <GhostButton
-                type="button"
-                onClick={() => setIsSheetOpen(true)}
-                className="w-full"
-              >
-                Aksi cepat
-              </GhostButton>
-            </div>
+            <NudgeCenter />
 
             {isDebug ? (
               <Card>
-                <SectionHeader title="Debug Engine" />
+                <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
+                  Debug Engine
+                </p>
                 <div className="mt-3 space-y-3 text-xs text-[color:var(--muted)]">
                   <div>
                     <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--muted)]">
@@ -409,39 +429,85 @@ function HomeContent() {
         onClose={() => setIsSheetOpen(false)}
         title="Aksi cepat"
       >
-        <div className="space-y-4">
-          <NudgeCenter />
-          <div className="grid gap-2">
+        <div className="divide-y divide-[color:var(--border)] text-sm">
+          <div className="flex items-start justify-between gap-3 py-3">
+            <div>
+              <p className="font-semibold text-[color:var(--text)]">
+                Pegang Subuh
+              </p>
+              <p className="text-xs text-[color:var(--muted)]">
+                Toggle status Subuh hari ini.
+              </p>
+            </div>
             <button
               type="button"
               onClick={handleToggleSubuh}
-              className={`${GHOST_BUTTON_CLASS} w-full`}
+              className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
             >
-              Pegang Subuh
+              Toggle
             </button>
-            <Link
-              href="/relation?start=1"
-              className={`${GHOST_BUTTON_CLASS} w-full`}
-            >
-              Ritual 7 menit
-            </Link>
-            <button
-              type="button"
-              onClick={handleChatIncrement}
-              className={`${GHOST_BUTTON_CLASS} w-full`}
-            >
-              Chat klien +1
-            </button>
+          </div>
+          <div className="flex items-start justify-between gap-3 py-3">
+            <div>
+              <p className="font-semibold text-[color:var(--text)]">Napas +1</p>
+              <p className="text-xs text-[color:var(--muted)]">
+                Tambah 1 sesi napas sadar.
+              </p>
+            </div>
             <button
               type="button"
               onClick={handleBreathIncrement}
-              className={`${GHOST_BUTTON_CLASS} w-full`}
+              className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
             >
-              Napas +1
+              Tambah
+            </button>
+          </div>
+          <div className="flex items-start justify-between gap-3 py-3">
+            <div>
+              <p className="font-semibold text-[color:var(--text)]">
+                Ritual 7 menit
+              </p>
+              <p className="text-xs text-[color:var(--muted)]">
+                Mulai ritual hadir untuk istri.
+              </p>
+            </div>
+            <Link
+              href="/relation?start=1"
+              className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+            >
+              Buka
+            </Link>
+          </div>
+          <div className="flex items-start justify-between gap-3 py-3">
+            <div>
+              <p className="font-semibold text-[color:var(--text)]">
+                Chat klien +1
+              </p>
+              <p className="text-xs text-[color:var(--muted)]">
+                Tambah 1 chat untuk tracker hari ini.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleChatIncrement}
+              className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+            >
+              Tambah
             </button>
           </div>
         </div>
       </BottomSheet>
+
+      <div
+        className="fixed inset-x-0 z-30 border-t border-[color:var(--border)] bg-[color:var(--bg)]/95 backdrop-blur"
+        style={{ bottom: "calc(56px + env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto w-full max-w-[560px] px-5 py-3">
+          <Link href={primaryAction.href} className={`${PRIMARY_BUTTON_CLASS} w-full`}>
+            {primaryAction.label}
+          </Link>
+        </div>
+      </div>
     </>
   );
 }
