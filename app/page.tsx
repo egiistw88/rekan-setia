@@ -12,6 +12,7 @@ import {
   upsertCareerLogPatch,
   upsertDailyLogPatch,
 } from "@/lib/logs";
+import NudgeCenter from "@/app/components/NudgeCenter";
 
 const isNightWindow = (date: Date) => {
   const minutes = date.getHours() * 60 + date.getMinutes();
@@ -236,6 +237,8 @@ export default function Home() {
                 )}
               </ul>
             </div>
+
+            <NudgeCenter />
 
             <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
               <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">

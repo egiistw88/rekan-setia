@@ -47,6 +47,14 @@ const buildDailyDefaults = (
   subuhDone: false,
   ritualDone: false,
   freezeMode: false,
+  spiritual: {
+    wudhuResetDone: false,
+    duaTemplateId: undefined,
+    duaNote: "",
+    istighfarCount: 0,
+    quranMinutes: 0,
+    updatedAtWib: undefined,
+  },
   updatedAt: timestamps.updatedAt,
   updatedAtWib: timestamps.updatedAtWib,
   planChecks: {},
@@ -123,10 +131,14 @@ export const upsertDailyLogPatch = async (
   const nextPlanChecks = patch.planChecks
     ? { ...(base.planChecks ?? {}), ...patch.planChecks }
     : base.planChecks;
+  const nextSpiritual = patch.spiritual
+    ? { ...(base.spiritual ?? {}), ...patch.spiritual }
+    : base.spiritual;
   const next: DailyLogRecord = {
     ...base,
     ...patch,
     planChecks: nextPlanChecks,
+    spiritual: nextSpiritual,
     updatedAt: timestamps.updatedAt,
     updatedAtWib: timestamps.updatedAtWib,
   };

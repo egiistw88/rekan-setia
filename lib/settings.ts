@@ -11,6 +11,13 @@ export type SettingsPatch = {
   weeklyTargets?: Partial<SettingsRecord["weeklyTargets"]>;
   monthlyGuards?: Partial<SettingsRecord["monthlyGuards"]>;
   theme?: Partial<SettingsRecord["theme"]>;
+  reminders?: {
+    enabled?: boolean;
+    useSystemNotifications?: boolean;
+    inputNight?: Partial<SettingsRecord["reminders"]["inputNight"]>;
+    leadFollowup?: Partial<SettingsRecord["reminders"]["leadFollowup"]>;
+    debtDue?: Partial<SettingsRecord["reminders"]["debtDue"]>;
+  };
   migratedThemeFromLocalStorage?: boolean;
 };
 
@@ -20,6 +27,24 @@ const LEGACY_THEME_KEY = "rekan-setia-theme-settings";
 const LEGACY_THEME_MODE_KEY = "themeMode";
 const LEGACY_DARK_START_KEY = "darkStart";
 const LEGACY_LIGHT_START_KEY = "lightStart";
+
+export const DEFAULT_REMINDERS: SettingsRecord["reminders"] = {
+  enabled: true,
+  useSystemNotifications: false,
+  inputNight: {
+    enabled: true,
+    time: "21:30",
+  },
+  leadFollowup: {
+    enabled: true,
+    time: "10:00",
+  },
+  debtDue: {
+    enabled: true,
+    time: "09:00",
+    windowDays: 2,
+  },
+};
 
 const computeTotalWajib = (
   targets: SettingsRecord["monthlyTargets"],
@@ -76,6 +101,7 @@ const createDefaultSettings = (): SettingsRecord => {
       darkStart: "18:00",
       lightStart: "06:00",
     },
+    reminders: { ...DEFAULT_REMINDERS },
     migratedThemeFromLocalStorage: false,
     createdAt: now,
     updatedAt: now,
@@ -104,6 +130,42 @@ const mergeSettings = (
 
   monthlyTargets.totalWajib = computeTotalWajib(monthlyTargets);
 
+  const currentReminders = {
+    ...DEFAULT_REMINDERS,
+    ...(current.reminders ?? {}),
+    inputNight: {
+      ...DEFAULT_REMINDERS.inputNight,
+      ...(current.reminders?.inputNight ?? {}),
+    },
+    leadFollowup: {
+      ...DEFAULT_REMINDERS.leadFollowup,
+      ...(current.reminders?.leadFollowup ?? {}),
+    },
+    debtDue: {
+      ...DEFAULT_REMINDERS.debtDue,
+      ...(current.reminders?.debtDue ?? {}),
+    },
+  };
+  const patchReminders = patch.reminders;
+  const reminders = patchReminders
+    ? {
+        ...currentReminders,
+        ...patchReminders,
+        inputNight: {
+          ...currentReminders.inputNight,
+          ...patchReminders.inputNight,
+        },
+        leadFollowup: {
+          ...currentReminders.leadFollowup,
+          ...patchReminders.leadFollowup,
+        },
+        debtDue: {
+          ...currentReminders.debtDue,
+          ...patchReminders.debtDue,
+        },
+      }
+    : currentReminders;
+
   return {
     ...current,
     monthlyTargets,
@@ -113,6 +175,7 @@ const mergeSettings = (
     weeklyTargets: { ...current.weeklyTargets, ...patch.weeklyTargets },
     monthlyGuards: { ...current.monthlyGuards, ...patch.monthlyGuards },
     theme: { ...current.theme, ...patch.theme },
+    reminders,
     migratedThemeFromLocalStorage:
       patch.migratedThemeFromLocalStorage ??
       current.migratedThemeFromLocalStorage,
@@ -243,6 +306,11 @@ export const ensureSettingsInitialized = async () => {
   let settings = await db.settings.get("singleton");
   if (!settings) {
     settings = createDefaultSettings();
+    await db.settings.put(settings);
+  }
+
+  if (!settings.reminders) {
+    settings = mergeSettings(settings, { reminders: DEFAULT_REMINDERS });
     await db.settings.put(settings);
   }
 

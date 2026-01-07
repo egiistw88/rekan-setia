@@ -39,6 +39,23 @@ export type SettingsRecord = {
     darkStart: string;
     lightStart: string;
   };
+  reminders: {
+    enabled: boolean;
+    useSystemNotifications: boolean;
+    inputNight: {
+      enabled: boolean;
+      time: string;
+    };
+    leadFollowup: {
+      enabled: boolean;
+      time: string;
+    };
+    debtDue: {
+      enabled: boolean;
+      time: string;
+      windowDays: number;
+    };
+  };
   migratedThemeFromLocalStorage: boolean;
   createdAt: string;
   updatedAt: string;
@@ -54,6 +71,14 @@ export type DailyLogRecord = {
   subuhDone: boolean;
   ritualDone: boolean;
   freezeMode?: boolean;
+  spiritual?: {
+    wudhuResetDone?: boolean;
+    duaTemplateId?: string;
+    duaNote?: string;
+    istighfarCount?: number;
+    quranMinutes?: number;
+    updatedAtWib?: string;
+  };
   updatedAt: string;
   updatedAtWib?: string;
   planChecks?: Record<string, boolean>;
