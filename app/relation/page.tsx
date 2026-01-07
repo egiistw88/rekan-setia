@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import PageShell from "@/app/components/PageShell";
 import { db, type RelationLogRecord } from "@/lib/db";
 import {
@@ -15,6 +15,7 @@ import { relationTemplates } from "@/lib/relationTemplates";
 import { getJakartaDateTime } from "@/lib/time";
 
 type RitualMode = 7 | 2;
+type WifeMood = "ringan" | "biasa" | "berat";
 
 const formatCountdown = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -39,7 +40,11 @@ const getSteps = (mode: RitualMode) => {
   ];
 };
 
-export default function RelationPage() {
+const isWifeMood = (value: string): value is WifeMood => {
+  return value === "ringan" || value === "biasa" || value === "berat";
+};
+
+function RelationContent() {
   const searchParams = useSearchParams();
   const dateKey = useMemo(() => getTodayDateKey(), []);
   const dailyLog = useLiveQuery(() => db.dailyLogs.get(dateKey), [dateKey]);
@@ -51,7 +56,7 @@ export default function RelationPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [note, setNote] = useState("");
   const [motherContactDone, setMotherContactDone] = useState(false);
-  const [wifeMood, setWifeMood] = useState("");
+  const [wifeMood, setWifeMood] = useState<WifeMood | "">("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [toast, setToast] = useState("");
   const toastTimeout = useRef<number | null>(null);
@@ -168,7 +173,7 @@ export default function RelationPage() {
       ritualDurationMin: mode,
       ritualCompletedAtWib: getJakartaDateTime(new Date()),
       motherContactDone,
-      wifeMood: wifeMood || undefined,
+      wifeMood: wifeMood ? wifeMood : undefined,
     };
     if (selectedTemplateId) {
       relationPatch.lastTemplateId = selectedTemplateId;
@@ -326,7 +331,12 @@ export default function RelationPage() {
           <span>Perasaan istri malam ini (opsional)</span>
           <select
             value={wifeMood}
-            onChange={(event) => setWifeMood(event.target.value)}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (value === "" || isWifeMood(value)) {
+                setWifeMood(value);
+              }
+            }}
             className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
           >
             <option value="">Pilih</option>
@@ -358,5 +368,19 @@ export default function RelationPage() {
         </p>
       </div>
     </PageShell>
+  );
+}
+
+export default function RelationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex w-full flex-1 items-center justify-center text-sm text-[color:var(--muted)]">
+          Memuat...
+        </div>
+      }
+    >
+      <RelationContent />
+    </Suspense>
   );
 }

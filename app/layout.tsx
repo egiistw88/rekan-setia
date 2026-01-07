@@ -19,7 +19,6 @@ export const metadata: Metadata = {
   description: "Pendamping harian yang ringan dan stabil.",
   applicationName: "Rekan Setia",
   manifest: "/manifest.webmanifest",
-  themeColor: "#f8f7f3",
   appleWebApp: {
     title: "Rekan Setia",
     statusBarStyle: "default",
@@ -29,6 +28,13 @@ export const metadata: Metadata = {
     icon: "/icons/icon-192.png",
     apple: "/icons/icon-192.png",
   },
+};
+
+export const viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0f14" },
+  ],
 };
 
 export default function RootLayout({

@@ -1224,11 +1224,13 @@ export const getAssessmentForToday = async (): Promise<DailyAssessment> => {
 
   let reasonDriver: PrimaryDriver = primaryDriver;
   if (driverStatusMap[primaryDriver].confidence < 60) {
-    const reliableCandidates: PrimaryDriver[] = ["STABILITY", "FINANCE"].filter(
+    const reliableCandidates = (
+      ["STABILITY", "FINANCE"] as PrimaryDriver[]
+    ).filter(
       (driver) =>
         driverStatusMap[driver].confidence >= 70 &&
         driverStatusMap[driver].level !== "AMAN",
-    ) as PrimaryDriver[];
+    );
     if (reliableCandidates.length > 0) {
       reasonDriver = reliableCandidates.reduce<PrimaryDriver>((best, driver) => {
         const bestLevel = driverStatusMap[best].level;

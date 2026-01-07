@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { db } from "@/lib/db";
 import type { DailyAssessment, Level } from "@/lib/engine";
 import { getAssessmentForToday } from "@/lib/engine";
@@ -45,7 +45,7 @@ const getReasonFallback = (level: Level) => {
   return "Saya tetap di jalur yang cukup stabil.";
 };
 
-export default function Home() {
+function HomeContent() {
   const [assessment, setAssessment] = useState<DailyAssessment | null>(null);
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(true);
   const [toast, setToast] = useState("");
@@ -443,5 +443,19 @@ export default function Home() {
         </div>
       </BottomSheet>
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex w-full flex-1 items-center justify-center text-sm text-[color:var(--muted)]">
+          Memuat...
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
