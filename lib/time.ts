@@ -40,3 +40,39 @@ export const getJakartaDateKey = (date: Date = new Date()) => {
 export const getJakartaDateTime = (date: Date = new Date()) => {
   return formatDateTimeParts(date);
 };
+
+export const formatNowWib = () => {
+  return getJakartaDateTime(new Date());
+};
+
+const parseDateInput = (value: string | Date) => {
+  if (value instanceof Date) {
+    return value;
+  }
+  if (value.includes(" ")) {
+    const [datePart, timePart] = value.split(" ");
+    return new Date(`${datePart}T${timePart}:00Z`);
+  }
+  return new Date(`${value}T00:00:00Z`);
+};
+
+export const addDaysWib = (date: string | Date, days: number) => {
+  const base = parseDateInput(date);
+  return getJakartaDateTime(new Date(base.getTime() + days * 86400000));
+};
+
+export const computeRemindAtWib = (
+  choice: "1h" | "3h" | "tomorrow",
+  baseDate: Date = new Date(),
+) => {
+  if (choice === "1h") {
+    return getJakartaDateTime(new Date(baseDate.getTime() + 3600000));
+  }
+  if (choice === "3h") {
+    return getJakartaDateTime(new Date(baseDate.getTime() + 3 * 3600000));
+  }
+  const tomorrowKey = getJakartaDateKey(
+    new Date(baseDate.getTime() + 86400000),
+  );
+  return `${tomorrowKey} 07:00`;
+};

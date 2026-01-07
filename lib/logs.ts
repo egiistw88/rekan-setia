@@ -1,6 +1,7 @@
 import {
   db,
   type CareerLogRecord,
+  type CareerLeadRecord,
   type DailyLogRecord,
   type FinanceLogRecord,
   type RelationLogRecord,
@@ -13,6 +14,7 @@ type DailyLogPatch = Partial<
 type CareerLogPatch = Partial<
   Omit<CareerLogRecord, "dateKey" | "updatedAt" | "updatedAtWib">
 >;
+type CareerLeadPatch = Partial<Omit<CareerLeadRecord, "id" | "createdAt" | "updatedAt">>;
 type FinanceLogPatch = Partial<
   Omit<FinanceLogRecord, "dateKey" | "updatedAt" | "updatedAtWib">
 >;
@@ -94,6 +96,23 @@ const buildRelationDefaults = (
   updatedAtWib: timestamps.updatedAtWib,
 });
 
+const buildCareerLeadDefaults = (
+  id: string,
+  timestamps: ReturnType<typeof getTimestamps>,
+): CareerLeadRecord => ({
+  id,
+  name: "",
+  platform: "Other",
+  handleOrContact: "",
+  niche: "Other",
+  status: "baru",
+  lastContactAtWib: undefined,
+  nextFollowupAtWib: undefined,
+  notes: "",
+  createdAt: timestamps.updatedAt,
+  updatedAt: timestamps.updatedAt,
+});
+
 export const upsertDailyLogPatch = async (
   dateKey: string,
   patch: DailyLogPatch,
@@ -160,4 +179,21 @@ export const upsertRelationLogPatch = async (
     updatedAtWib: timestamps.updatedAtWib,
   };
   await db.relationLogs.put(next);
+};
+
+export const upsertCareerLeadPatch = async (
+  id: string,
+  patch: CareerLeadPatch,
+) => {
+  const timestamps = getTimestamps();
+  const existing = await db.careerLeads.get(id);
+  const base = existing ?? buildCareerLeadDefaults(id, timestamps);
+  const next: CareerLeadRecord = {
+    ...base,
+    ...patch,
+    createdAt: base.createdAt ?? timestamps.updatedAt,
+    updatedAt: timestamps.updatedAt,
+  };
+  await db.careerLeads.put(next);
+  return next;
 };

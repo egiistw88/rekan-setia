@@ -94,12 +94,58 @@ export type CareerLogRecord = {
   updatedAtWib?: string;
 };
 
+export type CareerLeadPlatform = "WA" | "IG" | "FB" | "Email" | "Other";
+export type CareerLeadNiche =
+  | "UMKM"
+  | "Event"
+  | "Food"
+  | "Fashion"
+  | "Education"
+  | "Other";
+export type CareerLeadStatus =
+  | "baru"
+  | "dihubungi"
+  | "followup"
+  | "respons"
+  | "klien"
+  | "tutup";
+
+export type CareerLeadRecord = {
+  id: string;
+  name: string;
+  platform: CareerLeadPlatform;
+  handleOrContact: string;
+  niche: CareerLeadNiche;
+  status: CareerLeadStatus;
+  lastContactAtWib?: string;
+  nextFollowupAtWib?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DeferredDecisionChoice = "1h" | "3h" | "tomorrow";
+
+export type DeferredDecisionRecord = {
+  id: string;
+  dateKey: string;
+  createdAtIso: string;
+  createdAtWib: string;
+  delayChoice: DeferredDecisionChoice;
+  remindAtWib: string;
+  topic: string;
+  resolved?: boolean;
+  resolvedAtWib?: string;
+};
+
 class RekanSetiaDB extends Dexie {
   settings!: Table<SettingsRecord, "singleton">;
   dailyLogs!: Table<DailyLogRecord, string>;
   financeLogs!: Table<FinanceLogRecord, string>;
   relationLogs!: Table<RelationLogRecord, string>;
   careerLogs!: Table<CareerLogRecord, string>;
+  careerLeads!: Table<CareerLeadRecord, string>;
+  deferredDecisions!: Table<DeferredDecisionRecord, string>;
 
   constructor() {
     super("rekan_setia");
@@ -109,6 +155,23 @@ class RekanSetiaDB extends Dexie {
       financeLogs: "dateKey",
       relationLogs: "dateKey",
       careerLogs: "dateKey",
+    });
+    this.version(2).stores({
+      settings: "id",
+      dailyLogs: "dateKey",
+      financeLogs: "dateKey",
+      relationLogs: "dateKey",
+      careerLogs: "dateKey",
+      careerLeads: "id, status, platform",
+    });
+    this.version(3).stores({
+      settings: "id",
+      dailyLogs: "dateKey",
+      financeLogs: "dateKey",
+      relationLogs: "dateKey",
+      careerLogs: "dateKey",
+      careerLeads: "id, status, platform",
+      deferredDecisions: "id, dateKey, resolved",
     });
   }
 }
