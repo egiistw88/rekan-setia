@@ -3,12 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const NAV_ITEMS = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon?: string;
+};
+
+const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Home" },
   { href: "/input", label: "Input" },
   { href: "/finance", label: "Finance" },
   { href: "/career", label: "Karier" },
-  { href: "/settings", label: "Lainnya" },
+  { href: "/more", label: "More", icon: "..." },
 ];
 
 const isActivePath = (pathname: string, href: string) => {
@@ -42,7 +48,14 @@ export default function BottomNav() {
                   active ? "opacity-100" : "opacity-0 group-hover:opacity-60"
                 }`}
               />
-              <span>{item.label}</span>
+              <span className="flex items-center gap-1">
+                {item.icon ? (
+                  <span aria-hidden="true" className="text-[10px] leading-none">
+                    {item.icon}
+                  </span>
+                ) : null}
+                <span>{item.label}</span>
+              </span>
             </Link>
           );
         })}
