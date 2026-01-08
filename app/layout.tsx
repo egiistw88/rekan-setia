@@ -1,18 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/app/components/Providers";
 import AppShell from "@/app/components/AppShell";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Rekan Setia",
@@ -45,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-dvh bg-[color:var(--bg)] text-[color:var(--text)] antialiased`}
+        className="min-h-dvh bg-[color:var(--bg)] text-[color:var(--text)] antialiased"
       >
         <Providers>
           <AppShell>{children}</AppShell>

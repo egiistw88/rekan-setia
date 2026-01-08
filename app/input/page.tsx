@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Card from "@/app/components/ui/Card";
+import EmptyState from "@/app/components/ui/EmptyState";
+import Page from "@/app/components/ui/Page";
 import PrimaryButton from "@/app/components/ui/PrimaryButton";
 import {
   db,
@@ -145,6 +147,8 @@ export default function InputPage() {
   const [career, setCareer] = useState<CareerForm>(defaultCareer);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [toast, setToast] = useState("");
   const toastTimeout = useRef<number | null>(null);
 
@@ -171,6 +175,7 @@ export default function InputPage() {
 
     const load = async () => {
       setIsLoading(true);
+      setLoadError(false);
       try {
         const [dailyLog, financeLog, relationLog, careerLog] =
           await Promise.all([
@@ -223,6 +228,7 @@ export default function InputPage() {
       } catch (error) {
         console.error(error);
         if (active) {
+          setLoadError(true);
           showToast("Saya belum bisa memuat. Saya coba lagi.");
         }
       } finally {
@@ -237,7 +243,7 @@ export default function InputPage() {
     return () => {
       active = false;
     };
-  }, [dateKey]);
+  }, [dateKey, loadAttempt]);
 
   const totalExpense =
     finance.expenseMakan +
@@ -334,16 +340,11 @@ export default function InputPage() {
       : ((currentStep - 1) / (steps.length - 1)) * 100;
 
   return (
-    <main className="flex w-full flex-1 flex-col gap-5 pb-36">
-      <header className="space-y-1">
-        <h1 className="text-lg font-semibold text-[color:var(--text)]">
-          Input Malam
-        </h1>
-        <p className="text-sm text-[color:var(--muted)]">
-          Saya tutup hari pelan, tapi rapi.
-        </p>
-      </header>
-
+    <Page
+      title="Input Malam"
+      subtitle="Saya tutup hari pelan, tapi rapi."
+      withStickyCta
+    >
       {toast ? (
         <div
           role="status"
@@ -354,32 +355,43 @@ export default function InputPage() {
         </div>
       ) : null}
 
-      <div className="space-y-3">
-        <div className="grid grid-cols-3 gap-2 text-[11px] text-[color:var(--muted)]">
-          {steps.map((step) => (
-            <div key={step.id} className="flex items-center gap-2">
-              <span
-                className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold ${
-                  step.id === currentStep
-                    ? "border-transparent bg-[color:var(--accent)] text-white"
-                    : "border-[color:var(--border)] text-[color:var(--muted)]"
-                }`}
-              >
-                {step.id}
-              </span>
-              <span>{step.title}</span>
-            </div>
-          ))}
-        </div>
-        <div className="h-1 w-full rounded-full bg-[color:var(--surface2)]">
-          <div
-            className="h-full rounded-full bg-[color:var(--accent)]"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
+      {loadError && !isLoading ? (
+        <EmptyState
+          title="Saya belum bisa memuat"
+          body="Saya coba lagi pelan-pelan. Tidak apa-apa."
+          primaryLabel="Coba lagi"
+          primaryOnClick={() => setLoadAttempt((prev) => prev + 1)}
+        />
+      ) : null}
 
-      {currentStep === 1 ? (
+      {!loadError ? (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-2 text-[11px] text-[color:var(--muted)]">
+            {steps.map((step) => (
+              <div key={step.id} className="flex items-center gap-2">
+                <span
+                  className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold ${
+                    step.id === currentStep
+                      ? "border-transparent bg-[color:var(--accent)] text-white"
+                      : "border-[color:var(--border)] text-[color:var(--muted)]"
+                  }`}
+                >
+                  {step.id}
+                </span>
+                <span>{step.title}</span>
+              </div>
+            ))}
+          </div>
+          <div className="h-1 w-full rounded-full bg-[color:var(--surface2)]">
+            <div
+              className="h-full rounded-full bg-[color:var(--accent)]"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {!loadError && currentStep === 1 ? (
         <Card>
           <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
             Stabilkan
@@ -488,7 +500,7 @@ export default function InputPage() {
         </Card>
       ) : null}
 
-      {currentStep === 2 ? (
+      {!loadError && currentStep === 2 ? (
         <Card>
           <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
             Keuangan
@@ -634,7 +646,7 @@ export default function InputPage() {
         </Card>
       ) : null}
 
-      {currentStep === 3 ? (
+      {!loadError && currentStep === 3 ? (
         <Card>
           <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
             Rumah + Arah
@@ -778,24 +790,26 @@ export default function InputPage() {
         </Card>
       ) : null}
 
-      <div className="flex items-center justify-between text-xs text-[color:var(--muted)]">
-        <button
-          type="button"
-          onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
-          disabled={currentStep === 1}
-          className="rounded-full border border-[color:var(--border)] px-3 py-1 disabled:opacity-40"
-        >
-          Kembali
-        </button>
-        <button
-          type="button"
-          onClick={() => setCurrentStep((prev) => Math.min(3, prev + 1))}
-          disabled={currentStep === 3}
-          className="rounded-full border border-[color:var(--border)] px-3 py-1 disabled:opacity-40"
-        >
-          Lanjut
-        </button>
-      </div>
+      {!loadError ? (
+        <div className="flex items-center justify-between text-xs text-[color:var(--muted)]">
+          <button
+            type="button"
+            onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
+            disabled={currentStep === 1}
+            className="rounded-full border border-[color:var(--border)] px-3 py-1 disabled:opacity-40"
+          >
+            Kembali
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentStep((prev) => Math.min(3, prev + 1))}
+            disabled={currentStep === 3}
+            className="rounded-full border border-[color:var(--border)] px-3 py-1 disabled:opacity-40"
+          >
+            Lanjut
+          </button>
+        </div>
+      ) : null}
 
       <div
         className="fixed inset-x-0 z-30 border-t border-[color:var(--border)] bg-[color:var(--surface2)]/95 backdrop-blur"
@@ -805,7 +819,7 @@ export default function InputPage() {
           <PrimaryButton
             type="button"
             onClick={handleSave}
-            disabled={isLoading || isSaving}
+            disabled={isLoading || isSaving || loadError}
             className="w-full"
           >
             {isSaving ? "Menyimpan..." : "Simpan"}
@@ -815,6 +829,6 @@ export default function InputPage() {
           </p>
         </div>
       </div>
-    </main>
+    </Page>
   );
 }

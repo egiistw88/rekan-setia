@@ -3,7 +3,9 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Card from "@/app/components/ui/Card";
+import EmptyState from "@/app/components/ui/EmptyState";
 import GhostButton from "@/app/components/ui/GhostButton";
+import Page from "@/app/components/ui/Page";
 import PrimaryButton from "@/app/components/ui/PrimaryButton";
 import CareerComposerSheet from "@/app/components/CareerComposerSheet";
 import {
@@ -137,6 +139,8 @@ export default function CareerPage() {
   const followupCount = useMemo(() => {
     return allLeads.filter(isFollowupDue).length;
   }, [allLeads, todayKey]);
+
+  const showLeadCard = allLeads.length > 0 || isFormOpen;
 
   const filteredLeads = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -323,16 +327,11 @@ export default function CareerPage() {
   const progressPercent = Math.min(100, Math.round((chatCount / 3) * 100));
 
   return (
-    <main className="flex w-full flex-1 flex-col gap-5 pb-36">
-      <header className="space-y-1">
-        <h1 className="text-lg font-semibold text-[color:var(--text)]">
-          Karier
-        </h1>
-        <p className="text-sm text-[color:var(--muted)]">
-          Saya cukup bergerak 1 chat. Itu sudah menang.
-        </p>
-      </header>
-
+    <Page
+      title="Karier"
+      subtitle="Saya cukup bergerak 1 chat. Itu sudah menang."
+      withStickyCta
+    >
       {toast ? (
         <div
           role="status"
@@ -373,151 +372,164 @@ export default function CareerPage() {
         </div>
       </Card>
 
-      <Card>
-        <div className="flex items-center justify-between">
-          <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
-            Lead
-          </p>
-          <button
-            type="button"
-            onClick={handleAddLead}
-            className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
-          >
-            Tambah lead
-          </button>
-        </div>
-
-        <div className="mt-4 space-y-2">
-          {followupCount > 0 ? (
+      {!showLeadCard ? (
+        <EmptyState
+          title="Saya mulai dari 1 lead"
+          body="Cukup satu nama untuk saya kirim chat hari ini."
+          primaryLabel="Tambah lead"
+          primaryOnClick={handleAddLead}
+        />
+      ) : (
+        <Card>
+          <div className="flex items-center justify-between">
+            <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
+              Lead
+            </p>
             <button
               type="button"
-              onClick={() => setFollowupOnly((prev) => !prev)}
+              onClick={handleAddLead}
               className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
             >
-              {followupOnly
-                ? "Semua lead"
-                : `Follow-up due: ${followupCount}`}
+              Tambah lead
             </button>
-          ) : null}
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Cari nama / kontak"
-            className={inputClass}
-          />
-        </div>
-
-        {isFormOpen ? (
-          <div className="mt-4 space-y-3 rounded-[var(--radius-md)] border border-[color:var(--border)] p-3">
-            <label className="block space-y-2 text-xs text-[color:var(--muted)]">
-              <span>Nama lead</span>
-              <input
-                value={formName}
-                onChange={(event) => setFormName(event.target.value)}
-                className={inputClass}
-              />
-            </label>
-            <label className="block space-y-2 text-xs text-[color:var(--muted)]">
-              <span>Platform</span>
-              <select
-                value={formPlatform}
-                onChange={(event) =>
-                  setFormPlatform(event.target.value as CareerLeadPlatform)
-                }
-                className={inputClass}
-              >
-                {platformOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block space-y-2 text-xs text-[color:var(--muted)]">
-              <span>Kontak</span>
-              <input
-                value={formHandle}
-                onChange={(event) => setFormHandle(event.target.value)}
-                placeholder="@ig / nomor WA"
-                className={inputClass}
-              />
-            </label>
-            <label className="block space-y-2 text-xs text-[color:var(--muted)]">
-              <span>Niche (opsional)</span>
-              <select
-                value={formNiche}
-                onChange={(event) =>
-                  setFormNiche(event.target.value as CareerLeadNiche)
-                }
-                className={inputClass}
-              >
-                {nicheOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={handleSaveLead}
-                className="rounded-full bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-white"
-              >
-                Simpan lead
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsFormOpen(false)}
-                className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--text)]"
-              >
-                Batal
-              </button>
-            </div>
           </div>
-        ) : null}
 
-        <div className="mt-4 space-y-3">
-          {filteredLeads.length === 0 ? (
-            <div className="rounded-[var(--radius-md)] border border-[color:var(--border)] p-3 text-xs text-[color:var(--muted)]">
-              Saya belum punya lead. Saya mulai dari 1 saja.
-            </div>
-          ) : (
-            filteredLeads.map((lead) => {
-              const due = isFollowupDue(lead);
-              return (
-                <button
-                  key={lead.id}
-                  type="button"
-                  onClick={() => handleSelectLead(lead)}
-                  className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] px-4 py-3 text-left transition hover:border-[color:var(--accent)]"
+          <div className="mt-4 space-y-2">
+            {followupCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setFollowupOnly((prev) => !prev)}
+                className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+              >
+                {followupOnly
+                  ? "Semua lead"
+                  : `Follow-up due: ${followupCount}`}
+              </button>
+            ) : (
+              <p className="text-xs text-[color:var(--muted)]">
+                Belum ada follow-up hari ini.
+              </p>
+            )}
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Cari nama / kontak"
+              className={inputClass}
+            />
+          </div>
+
+          {isFormOpen ? (
+            <div className="mt-4 space-y-3 rounded-[var(--radius-md)] border border-[color:var(--border)] p-3">
+              <label className="block space-y-2 text-xs text-[color:var(--muted)]">
+                <span>Nama lead</span>
+                <input
+                  value={formName}
+                  onChange={(event) => setFormName(event.target.value)}
+                  className={inputClass}
+                />
+              </label>
+              <label className="block space-y-2 text-xs text-[color:var(--muted)]">
+                <span>Platform</span>
+                <select
+                  value={formPlatform}
+                  onChange={(event) =>
+                    setFormPlatform(event.target.value as CareerLeadPlatform)
+                  }
+                  className={inputClass}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold text-[color:var(--text)]">
-                        {lead.name}
-                      </p>
-                      <p className="text-xs text-[color:var(--muted)]">
-                        {lead.platform} - {lead.handleOrContact || "-"}
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-[color:var(--surface2)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--muted)]">
-                      {statusLabel[lead.status]}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2 text-[10px] text-[color:var(--muted)]">
-                    {due ? (
-                      <span className="rounded-full bg-[color:var(--warn)]/15 px-2 py-0.5 text-[color:var(--warn)]">
-                        Follow-up
-                      </span>
-                    ) : null}
-                  </div>
+                  {platformOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-2 text-xs text-[color:var(--muted)]">
+                <span>Kontak</span>
+                <input
+                  value={formHandle}
+                  onChange={(event) => setFormHandle(event.target.value)}
+                  placeholder="@ig / nomor WA"
+                  className={inputClass}
+                />
+              </label>
+              <label className="block space-y-2 text-xs text-[color:var(--muted)]">
+                <span>Niche (opsional)</span>
+                <select
+                  value={formNiche}
+                  onChange={(event) =>
+                    setFormNiche(event.target.value as CareerLeadNiche)
+                  }
+                  className={inputClass}
+                >
+                  {nicheOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveLead}
+                  className="rounded-full bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-white"
+                >
+                  Simpan lead
                 </button>
-              );
-            })
-          )}
-        </div>
-      </Card>
+                <button
+                  type="button"
+                  onClick={() => setIsFormOpen(false)}
+                  className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--text)]"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="mt-4 space-y-3">
+            {filteredLeads.length === 0 ? (
+              <p className="text-xs text-[color:var(--muted)]">
+                Belum ada lead yang cocok.
+              </p>
+            ) : (
+              filteredLeads.map((lead) => {
+                const due = isFollowupDue(lead);
+                return (
+                  <button
+                    key={lead.id}
+                    type="button"
+                    onClick={() => handleSelectLead(lead)}
+                    className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] px-4 py-3 text-left transition hover:border-[color:var(--accent)]"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-[color:var(--text)]">
+                          {lead.name}
+                        </p>
+                        <p className="text-xs text-[color:var(--muted)]">
+                          {lead.platform} - {lead.handleOrContact || "-"}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-[color:var(--surface2)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--muted)]">
+                        {statusLabel[lead.status]}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 text-[10px] text-[color:var(--muted)]">
+                      {due ? (
+                        <span className="rounded-full bg-[color:var(--warn)]/15 px-2 py-0.5 text-[color:var(--warn)]">
+                          Follow-up
+                        </span>
+                      ) : null}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </Card>
+      )}
 
       <div
         className="fixed inset-x-0 z-30 border-t border-[color:var(--border)] bg-[color:var(--surface2)]/95 backdrop-blur"
@@ -548,6 +560,6 @@ export default function CareerPage() {
         onCopy={handleCopy}
         onMarkSent={handleMarkSent}
       />
-    </main>
+    </Page>
   );
 }

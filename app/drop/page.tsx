@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useMemo, useRef, useState } from "react";
-import PageShell from "@/app/components/PageShell";
+import Card from "@/app/components/ui/Card";
+import EmptyState from "@/app/components/ui/EmptyState";
+import GhostButton from "@/app/components/ui/GhostButton";
+import Page from "@/app/components/ui/Page";
+import PrimaryButton from "@/app/components/ui/PrimaryButton";
 import { db, type DeferredDecisionRecord } from "@/lib/db";
 import { getTodayDateKey, upsertDailyLogPatch } from "@/lib/logs";
 import { computeRemindAtWib, formatNowWib } from "@/lib/time";
@@ -37,6 +41,7 @@ export default function DropPage() {
     useState<"1h" | "3h" | "tomorrow">("1h");
   const [delayTopic, setDelayTopic] = useState("");
   const [toast, setToast] = useState("");
+  const [dropLogError, setDropLogError] = useState(false);
 
   const intervalRef = useRef<number | null>(null);
   const toastTimeout = useRef<number | null>(null);
@@ -99,10 +104,16 @@ export default function DropPage() {
       return;
     }
     const key = `drop_logged_${dateKey}`;
-    if (window.sessionStorage.getItem(key)) {
+    try {
+      if (window.sessionStorage.getItem(key)) {
+        return;
+      }
+      window.sessionStorage.setItem(key, "1");
+    } catch (error) {
+      console.error(error);
+      setDropLogError(true);
       return;
     }
-    window.sessionStorage.setItem(key, "1");
     const logDrop = async () => {
       const existing = await db.dailyLogs.get(dateKey);
       const nextRuns = (existing?.dropModeRuns ?? 0) + 1;
@@ -110,6 +121,7 @@ export default function DropPage() {
         await upsertDailyLogPatch(dateKey, { dropModeRuns: nextRuns });
       } catch (error) {
         console.error(error);
+        setDropLogError(true);
       }
     };
     void logDrop();
@@ -214,26 +226,33 @@ export default function DropPage() {
   const actionsDisabled = secondsLeft !== 0;
 
   return (
-    <PageShell
+    <Page
       title="Drop Mode"
-      description="Saya tidak menyelesaikan hidup sekarang. Saya menurunkan gelombang dulu."
+      subtitle="Saya tidak menyelesaikan hidup sekarang. Saya menurunkan gelombang dulu."
     >
       {toast ? (
         <div
           role="status"
           aria-live="polite"
-          className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 text-sm text-[color:var(--foreground)]"
+          className="rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm text-[color:var(--text)]"
         >
           {toast}
         </div>
       ) : null}
 
-      <section className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+      {dropLogError ? (
+        <EmptyState
+          title="Saya tetap bisa mulai"
+          body="Catatan drop hari ini belum tersimpan, tapi saya tetap bisa menenangkan diri."
+        />
+      ) : null}
+
+      <Card>
         <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
           Skrip 60 Detik
         </p>
         <div className="mt-4 flex items-center justify-between">
-          <p className="text-4xl font-semibold text-[color:var(--foreground)]">
+          <p className="text-3xl font-semibold text-[color:var(--text)]">
             {formatTimer(secondsLeft)}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -249,23 +268,23 @@ export default function DropPage() {
               type="button"
               onClick={handlePause}
               disabled={!isRunning}
-              className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--foreground)] disabled:opacity-60"
+              className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--text)] disabled:opacity-60"
             >
               Pause
             </button>
             <button
               type="button"
               onClick={handleReset}
-              className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--foreground)]"
+              className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--text)]"
             >
               Ulang
             </button>
           </div>
         </div>
-        <p className="mt-4 text-sm text-[color:var(--foreground)]">{stepText}</p>
-      </section>
+        <p className="mt-4 text-sm text-[color:var(--text)]">{stepText}</p>
+      </Card>
 
-      <section className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+      <Card>
         <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
           Tindakan Setelah 60 Detik
         </p>
@@ -274,30 +293,26 @@ export default function DropPage() {
             Selesaikan 60 detik dulu untuk membuka tindakan kecil.
           </p>
         ) : (
-          <div className="mt-4 space-y-3">
-            <button
-              type="button"
-              onClick={handleAddBreath}
-              className="w-full rounded-2xl bg-[color:var(--accent)] px-4 py-3 text-xs font-semibold text-white"
-            >
+          <div className="mt-4 space-y-2">
+            <PrimaryButton type="button" onClick={handleAddBreath} className="w-full">
               Tambah 1 sesi napas
-            </button>
-            <button
+            </PrimaryButton>
+            <GhostButton
               type="button"
               onClick={() => setIsDelayOpen((prev) => !prev)}
-              className="w-full rounded-2xl border border-[color:var(--border)] px-4 py-3 text-xs text-[color:var(--foreground)]"
+              className="w-full"
             >
               Tunda keputusan
-            </button>
+            </GhostButton>
             {isDelayOpen ? (
-              <div className="space-y-3 rounded-2xl border border-[color:var(--border)] p-3">
+              <div className="space-y-3 rounded-[var(--radius-md)] border border-[color:var(--border)] p-3">
                 <div className="space-y-2 text-xs text-[color:var(--muted)]">
                   <p>Pilih durasi tunda</p>
                   <div className="flex flex-wrap gap-2">
                     {delayOptions.map((option) => (
                       <label
                         key={option.value}
-                        className="flex items-center gap-2 rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--foreground)]"
+                        className="flex items-center gap-2 rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
                       >
                         <input
                           type="radio"
@@ -317,23 +332,19 @@ export default function DropPage() {
                     value={delayTopic}
                     onChange={(event) => setDelayTopic(event.target.value)}
                     rows={2}
-                    className="w-full resize-none rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--foreground)]"
+                    className="w-full resize-none rounded-[var(--radius-md)] border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--text)]"
                   />
                 </label>
-                <button
-                  type="button"
-                  onClick={handleSaveDelay}
-                  className="w-full rounded-2xl bg-[color:var(--accent)] px-4 py-3 text-xs font-semibold text-white"
-                >
+                <PrimaryButton type="button" onClick={handleSaveDelay} className="w-full">
                   Simpan tunda
-                </button>
+                </PrimaryButton>
               </div>
             ) : null}
           </div>
         )}
-      </section>
+      </Card>
 
-      <section className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+      <Card>
         <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
           Tunda Saya Hari Ini
         </p>
@@ -346,11 +357,9 @@ export default function DropPage() {
             {deferredList.map((item) => (
               <div
                 key={item.id}
-                className="rounded-xl border border-[color:var(--border)] px-3 py-2"
+                className="rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2"
               >
-                <p className="text-sm text-[color:var(--foreground)]">
-                  {item.topic}
-                </p>
+                <p className="text-sm text-[color:var(--text)]">{item.topic}</p>
                 <p className="mt-1 text-xs text-[color:var(--muted)]">
                   Ingat lagi: {item.remindAtWib}
                 </p>
@@ -360,7 +369,7 @@ export default function DropPage() {
                     <button
                       type="button"
                       onClick={() => handleResolve(item)}
-                      className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--foreground)]"
+                      className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
                     >
                       Selesai
                     </button>
@@ -370,16 +379,16 @@ export default function DropPage() {
             ))}
           </div>
         )}
-      </section>
+      </Card>
 
       <div className="flex justify-center">
         <Link
           href="/"
-          className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--foreground)]"
+          className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--text)]"
         >
           Kembali ke Dashboard
         </Link>
       </div>
-    </PageShell>
+    </Page>
   );
 }

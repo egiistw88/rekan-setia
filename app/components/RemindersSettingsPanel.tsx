@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Card from "@/app/components/ui/Card";
 import type { SettingsRecord } from "@/lib/db";
 import { DEFAULT_REMINDERS, updateSettings, useSettings } from "@/lib/settings";
 
@@ -67,11 +68,11 @@ export default function RemindersSettingsPanel() {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-        <h2 className="text-sm font-semibold text-[color:var(--foreground)]">
+      <Card className="space-y-4">
+        <h2 className="text-sm font-semibold text-[color:var(--text)]">
           Pengingat
         </h2>
-        <label className="flex items-center justify-between text-sm text-[color:var(--foreground)]">
+        <label className="flex items-center justify-between text-sm text-[color:var(--text)]">
           <span>Aktifkan pengingat</span>
           <input
             type="checkbox"
@@ -84,13 +85,13 @@ export default function RemindersSettingsPanel() {
         <p className="text-xs text-[color:var(--muted)]">
           Pengingat hanya muncul saat aplikasi sedang terbuka.
         </p>
-      </section>
+      </Card>
 
-      <section className="space-y-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-        <h2 className="text-sm font-semibold text-[color:var(--foreground)]">
+      <Card className="space-y-4">
+        <h2 className="text-sm font-semibold text-[color:var(--text)]">
           Notifikasi sistem
         </h2>
-        <label className="flex items-center justify-between text-sm text-[color:var(--foreground)]">
+        <label className="flex items-center justify-between text-sm text-[color:var(--text)]">
           <span>Gunakan notifikasi sistem</span>
           <input
             type="checkbox"
@@ -110,19 +111,19 @@ export default function RemindersSettingsPanel() {
           <button
             type="button"
             onClick={handleRequestPermission}
-            className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--foreground)]"
+            className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
           >
             Minta izin
           </button>
         </div>
-      </section>
+      </Card>
 
-      <section className="space-y-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-        <h2 className="text-sm font-semibold text-[color:var(--foreground)]">
+      <Card className="space-y-4">
+        <h2 className="text-sm font-semibold text-[color:var(--text)]">
           Jadwal pengingat
         </h2>
         <div className="space-y-3">
-          <label className="flex items-center justify-between text-sm text-[color:var(--foreground)]">
+          <label className="flex items-center justify-between text-sm text-[color:var(--text)]">
             <span>Input malam</span>
             <input
               type="checkbox"
@@ -147,10 +148,10 @@ export default function RemindersSettingsPanel() {
                 inputNight: { ...prev.inputNight, time: event.target.value },
               }))
             }
-            className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--foreground)]"
+            className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--text)]"
           />
 
-          <label className="flex items-center justify-between text-sm text-[color:var(--foreground)]">
+          <label className="flex items-center justify-between text-sm text-[color:var(--text)]">
             <span>Follow-up lead</span>
             <input
               type="checkbox"
@@ -178,10 +179,10 @@ export default function RemindersSettingsPanel() {
                 },
               }))
             }
-            className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--foreground)]"
+            className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--text)]"
           />
 
-          <label className="flex items-center justify-between text-sm text-[color:var(--foreground)]">
+          <label className="flex items-center justify-between text-sm text-[color:var(--text)]">
             <span>Pinjol</span>
             <input
               type="checkbox"
@@ -207,7 +208,7 @@ export default function RemindersSettingsPanel() {
                   debtDue: { ...prev.debtDue, time: event.target.value },
                 }))
               }
-              className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--foreground)]"
+              className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--text)]"
             />
             <input
               type="number"
@@ -224,7 +225,7 @@ export default function RemindersSettingsPanel() {
                   debtDue: { ...prev.debtDue, windowDays: clamped },
                 }));
               }}
-              className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--foreground)]"
+              className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--text)]"
               placeholder="H-1..H-3"
             />
           </div>
@@ -232,9 +233,9 @@ export default function RemindersSettingsPanel() {
             Window pinjol 1-3 hari sebelum jatuh tempo.
           </p>
         </div>
-      </section>
+      </Card>
 
-      <section className="flex flex-col gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+      <Card className="flex flex-col gap-3">
         <button
           type="button"
           onClick={handleSave}
@@ -246,7 +247,7 @@ export default function RemindersSettingsPanel() {
         <p className="text-xs text-[color:var(--muted)]">
           Saya pilih pengingat yang menenangkan, bukan yang menghakimi.
         </p>
-      </section>
+      </Card>
     </div>
   );
 }

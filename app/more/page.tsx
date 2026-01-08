@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useMemo, useState } from "react";
 import Card from "@/app/components/ui/Card";
+import EmptyState from "@/app/components/ui/EmptyState";
+import Page from "@/app/components/ui/Page";
 import { db } from "@/lib/db";
 import type { DailyAssessment } from "@/lib/engine";
 import { getAssessmentForToday } from "@/lib/engine";
@@ -61,7 +63,10 @@ export default function MorePage() {
   const subuhDone = dailyLog?.subuhDone === true;
   const isCritical = assessment?.overallLevel === "KRITIS";
 
-  const highlight: Highlight = useMemo(() => {
+  const highlight = useMemo<Highlight | null>(() => {
+    if (!assessment) {
+      return null;
+    }
     if (isCritical) {
       return {
         title: "Drop Mode",
@@ -88,7 +93,7 @@ export default function MorePage() {
       reason: "Saya rapikan target supaya ritme lebih ringan.",
       href: "/settings",
     };
-  }, [isCritical, ritualDone, subuhDone]);
+  }, [assessment, isCritical, ritualDone, subuhDone]);
 
   const tiles: Tile[] = [
     {
@@ -121,23 +126,17 @@ export default function MorePage() {
   ];
 
   return (
-    <main className="flex w-full flex-1 flex-col gap-5 pb-32">
-      <header className="space-y-1">
-        <h1 className="text-lg font-semibold text-[color:var(--text)]">
-          Lainnya
-        </h1>
-        <p className="text-sm text-[color:var(--muted)]">
-          Saya pilih satu yang paling saya butuhkan.
-        </p>
-      </header>
-
+    <Page
+      title="Lainnya"
+      subtitle="Saya pilih satu yang paling saya butuhkan."
+    >
       {isAssessmentLoading && !assessment ? (
         <Card>
           <p className="text-sm text-[color:var(--muted)]">
             Saya sedang merapikan rekomendasi hari ini...
           </p>
         </Card>
-      ) : (
+      ) : highlight ? (
         <Link href={highlight.href} className="block">
           <Card className="space-y-3 transition hover:border-[color:var(--accent)]">
             <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
@@ -154,6 +153,13 @@ export default function MorePage() {
             <p className="text-xs text-[color:var(--muted)]">{highlight.reason}</p>
           </Card>
         </Link>
+      ) : (
+        <EmptyState
+          title="Hari ini cukup tenang"
+          body="Saya bisa pilih satu langkah kecil saja."
+          primaryLabel="Buka Settings"
+          primaryHref="/settings"
+        />
       )}
 
       <div className="grid grid-cols-2 gap-3">
@@ -182,6 +188,6 @@ export default function MorePage() {
           </Link>
         ))}
       </div>
-    </main>
+    </Page>
   );
 }

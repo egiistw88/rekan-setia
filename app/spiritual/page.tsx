@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useMemo, useRef, useState } from "react";
-import PageShell from "@/app/components/PageShell";
+import Card from "@/app/components/ui/Card";
+import EmptyState from "@/app/components/ui/EmptyState";
+import GhostButton from "@/app/components/ui/GhostButton";
+import Page from "@/app/components/ui/Page";
+import PrimaryButton from "@/app/components/ui/PrimaryButton";
 import { db } from "@/lib/db";
 import { duaTemplates } from "@/lib/duaTemplates";
 import { getTodayDateKey, upsertDailyLogPatch } from "@/lib/logs";
@@ -220,224 +224,255 @@ export default function SpiritualPage() {
     }
   };
 
+  const recommendedTemplates = duaTemplates.slice(0, 3);
+  const extraTemplates = duaTemplates.slice(3);
+
+  const hasAnySpiritualData =
+    Boolean(dailyLog?.subuhDone) ||
+    Boolean(dailyLog?.spiritual?.duaNote) ||
+    Boolean(dailyLog?.spiritual?.wudhuResetDone) ||
+    Boolean(dailyLog?.spiritual?.istighfarCount) ||
+    Boolean(dailyLog?.spiritual?.quranMinutes);
+
   return (
-    <PageShell
-      title="Spiritual"
-      description="Saya tetap tersambung, meski minimal."
-    >
+    <Page title="Spiritual" subtitle="Saya tetap tersambung, meski minimal.">
       {toast ? (
         <div
           role="status"
           aria-live="polite"
-          className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 text-sm text-[color:var(--foreground)]"
+          className="rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm text-[color:var(--text)]"
         >
           {toast}
         </div>
       ) : null}
 
-      <section className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+      {!hasAnySpiritualData ? (
+        <EmptyState
+          title="Saya mulai dari Subuh"
+          body="Satu langkah kecil sudah cukup untuk mulai."
+          primaryLabel={subuhDone ? undefined : "Pegang Subuh"}
+          primaryOnClick={subuhDone ? undefined : handleToggleSubuh}
+        />
+      ) : null}
+
+      <Card>
         <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
           Status Hari Ini
         </p>
-        <div className="mt-4 space-y-2 text-sm text-[color:var(--foreground)]">
+        <div className="mt-3 space-y-1 text-sm text-[color:var(--text)]">
           <p>Pegang Subuh: {subuhDone ? "YA" : "BELUM"}</p>
           <p>Streak Subuh: {subuhStreak} hari</p>
         </div>
         <p className="mt-3 text-xs text-[color:var(--muted)]">{subuhCopy}</p>
-      </section>
+      </Card>
 
-      <section className="space-y-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+      <Card>
         <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
-          Pegangan Minimal (2 menit)
+          Pegangan minimal
         </p>
-        <button
-          type="button"
-          onClick={handleToggleSubuh}
-          className="w-full rounded-2xl border border-[color:var(--border)] px-4 py-3 text-xs text-[color:var(--foreground)]"
-        >
-          {subuhDone ? "Batalkan Subuh" : "Pegang Subuh"}
-        </button>
-
-        <div className="space-y-3 rounded-2xl border border-[color:var(--border)] p-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
-              Wudhu Reset 60 detik
-            </p>
-            <span className="text-xs text-[color:var(--muted)]">
-              {wudhuDone ? "Sudah dilakukan" : "Belum"}
-            </span>
-          </div>
-          <p className="text-3xl font-semibold text-[color:var(--foreground)]">
-            {formatTimer(wudhuSecondsLeft)}
-          </p>
-          <p className="text-sm text-[color:var(--muted)]">
-            Bahu turun. Rahang longgar. Saya mulai lagi.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={handleWudhuStart}
-              disabled={wudhuRunning}
-              className="rounded-full bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
-            >
-              Start
-            </button>
-            <button
-              type="button"
-              onClick={handleWudhuPause}
-              disabled={!wudhuRunning}
-              className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--foreground)] disabled:opacity-60"
-            >
-              Pause
-            </button>
-            <button
-              type="button"
-              onClick={handleWudhuReset}
-              className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--foreground)]"
-            >
-              Reset
-            </button>
-            <button
-              type="button"
-              onClick={handleWudhuDone}
-              className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--foreground)]"
-            >
-              Selesai
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
-              Doa Jujur 20 detik
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {duaTemplates.map((template) => (
-              <div
-                key={template.id}
-                className="rounded-2xl border border-[color:var(--border)] p-3"
-              >
-                <p className="text-xs font-semibold text-[color:var(--foreground)]">
-                  {template.title}
-                </p>
-                <p className="mt-2 text-xs text-[color:var(--muted)]">
-                  {template.text}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleUseTemplate(template.id, template.text)}
-                  className="mt-3 rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--foreground)]"
-                >
-                  Pakai
-                </button>
+        <div className="mt-3 space-y-2">
+          <GhostButton type="button" onClick={handleToggleSubuh} className="w-full">
+            {subuhDone ? "Batalkan Subuh" : "Pegang Subuh"}
+          </GhostButton>
+          <details className="rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2 text-xs text-[color:var(--muted)]">
+            <summary className="cursor-pointer">Wudhu reset 60 detik</summary>
+            <div className="mt-3 space-y-3 text-sm text-[color:var(--text)]">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[color:var(--muted)]">
+                  {wudhuDone ? "Sudah dilakukan" : "Belum"}
+                </span>
+                <span className="text-lg font-semibold text-[color:var(--text)]">
+                  {formatTimer(wudhuSecondsLeft)}
+                </span>
               </div>
-            ))}
-          </div>
-          <label className="block space-y-2 text-xs text-[color:var(--muted)]">
-            <span>Doa saya malam ini</span>
-            <textarea
-              value={duaNote}
-              onChange={(event) => setDuaNote(event.target.value)}
-              rows={3}
-              className="w-full resize-none rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--foreground)]"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={handleSaveDua}
-            className="rounded-full bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-white"
-          >
-            Simpan doa
-          </button>
+              <p className="text-xs text-[color:var(--muted)]">
+                Bahu turun. Rahang longgar. Saya mulai lagi.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <PrimaryButton
+                  type="button"
+                  onClick={handleWudhuStart}
+                  disabled={wudhuRunning}
+                >
+                  Start
+                </PrimaryButton>
+                <GhostButton
+                  type="button"
+                  onClick={handleWudhuPause}
+                  disabled={!wudhuRunning}
+                >
+                  Pause
+                </GhostButton>
+                <GhostButton type="button" onClick={handleWudhuReset}>
+                  Reset
+                </GhostButton>
+                <GhostButton type="button" onClick={handleWudhuDone}>
+                  Selesai
+                </GhostButton>
+              </div>
+            </div>
+          </details>
+          <details className="rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2 text-xs text-[color:var(--muted)]">
+            <summary className="cursor-pointer">Doa jujur 20 detik</summary>
+            <div className="mt-3 space-y-3">
+              <div className="grid gap-3">
+                {recommendedTemplates.map((template) => (
+                  <div
+                    key={template.id}
+                    className="rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2"
+                  >
+                    <p className="text-xs font-semibold text-[color:var(--text)]">
+                      {template.title}
+                    </p>
+                    <p className="mt-1 text-xs text-[color:var(--muted)]">
+                      {template.text}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleUseTemplate(template.id, template.text)}
+                      className="mt-2 rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+                    >
+                      Pakai
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {extraTemplates.length > 0 ? (
+                <details className="rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2 text-xs text-[color:var(--muted)]">
+                  <summary className="cursor-pointer">Lihat semua</summary>
+                  <div className="mt-3 grid gap-3">
+                    {extraTemplates.map((template) => (
+                      <div
+                        key={template.id}
+                        className="rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2"
+                      >
+                        <p className="text-xs font-semibold text-[color:var(--text)]">
+                          {template.title}
+                        </p>
+                        <p className="mt-1 text-xs text-[color:var(--muted)]">
+                          {template.text}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUseTemplate(template.id, template.text)
+                          }
+                          className="mt-2 rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+                        >
+                          Pakai
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+              <label className="block space-y-2 text-xs text-[color:var(--muted)]">
+                <span>Doa saya malam ini</span>
+                <textarea
+                  value={duaNote}
+                  onChange={(event) => setDuaNote(event.target.value)}
+                  rows={3}
+                  className="w-full resize-none rounded-[var(--radius-md)] border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--text)]"
+                />
+              </label>
+              <PrimaryButton type="button" onClick={handleSaveDua}>
+                Simpan doa
+              </PrimaryButton>
+            </div>
+          </details>
         </div>
-      </section>
+      </Card>
 
-      <section className="space-y-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+      <Card>
         <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
-          Ringan Setelah Subuh (opsional)
+          Ringan setelah Subuh (opsional)
         </p>
-        <div className="space-y-3 rounded-2xl border border-[color:var(--border)] p-3">
-          <p className="text-sm font-semibold text-[color:var(--foreground)]">
-            Istighfar
-          </p>
-          <p className="text-3xl font-semibold text-[color:var(--foreground)]">
-            {istighfarCount}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => updateIstighfar(istighfarCount + 1)}
-              className="rounded-full bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-white"
-            >
-              +1
-            </button>
-            <button
-              type="button"
-              onClick={() => updateIstighfar(istighfarCount + 10)}
-              className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--foreground)]"
-            >
-              +10
-            </button>
-            <button
-              type="button"
-              onClick={() => updateIstighfar(0)}
-              className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--foreground)]"
-            >
-              Reset
-            </button>
+        <div className="mt-3 space-y-3">
+          <div className="rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-[color:var(--text)]">
+                Istighfar
+              </p>
+              <span className="text-sm font-semibold text-[color:var(--text)]">
+                {istighfarCount}
+              </span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => updateIstighfar(istighfarCount + 1)}
+                className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+              >
+                +1
+              </button>
+              <button
+                type="button"
+                onClick={() => updateIstighfar(istighfarCount + 10)}
+                className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+              >
+                +10
+              </button>
+              <button
+                type="button"
+                onClick={() => updateIstighfar(0)}
+                className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-[color:var(--text)]">
+                Quran (menit)
+              </p>
+              <span className="text-sm text-[color:var(--text)]">
+                {quranMinutes} menit
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={30}
+              step={1}
+              value={quranMinutes}
+              onChange={(event) =>
+                updateQuranMinutes(Number(event.target.value))
+              }
+              className="mt-2 w-full"
+            />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => updateQuranMinutes(quranMinutes + 1)}
+                className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+              >
+                +1
+              </button>
+              <button
+                type="button"
+                onClick={() => updateQuranMinutes(0)}
+                className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+              >
+                Reset
+              </button>
+            </div>
           </div>
         </div>
+      </Card>
 
-        <div className="space-y-3 rounded-2xl border border-[color:var(--border)] p-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-[color:var(--foreground)]">
-              Qur'an (menit)
-            </p>
-            <span className="text-sm text-[color:var(--foreground)]">
-              {quranMinutes} menit
-            </span>
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={30}
-            step={1}
-            value={quranMinutes}
-            onChange={(event) => updateQuranMinutes(Number(event.target.value))}
-            className="w-full"
-          />
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => updateQuranMinutes(quranMinutes + 1)}
-              className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--foreground)]"
-            >
-              +1
-            </button>
-            <button
-              type="button"
-              onClick={() => updateQuranMinutes(0)}
-              className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--foreground)]"
-            >
-              Reset
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-3 text-center">
+      <section className="space-y-2 text-center">
         <p className="text-xs text-[color:var(--muted)]">
           Kalau saya cuma sanggup satu langkah kecil, itu tetap dihitung.
         </p>
         <Link
           href="/"
-          className="inline-flex rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--foreground)]"
+          className="inline-flex rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--text)]"
         >
           Kembali ke Dashboard
         </Link>
       </section>
-    </PageShell>
+    </Page>
   );
 }

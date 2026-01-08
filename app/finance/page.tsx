@@ -4,6 +4,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import Collapsible from "@/app/components/ui/Collapsible";
+import EmptyState from "@/app/components/ui/EmptyState";
+import Page from "@/app/components/ui/Page";
 import PrimaryButton from "@/app/components/ui/PrimaryButton";
 import { db } from "@/lib/db";
 import {
@@ -302,7 +304,7 @@ export default function FinancePage() {
   const showFreezeCta = net < 0 || dueInfo.daysToDue <= 2;
   const ctaLabel = showFreezeCta ? "Aktifkan Mode Beku" : "Buka Input Keuangan";
 
-  const scrollToCard = (ref: RefObject<HTMLDivElement>) => {
+  const scrollToCard = (ref: RefObject<HTMLDivElement | null>) => {
     if (!ref.current) {
       return;
     }
@@ -323,17 +325,14 @@ export default function FinancePage() {
     router.push("/input");
   };
 
-  return (
-    <main className="flex w-full flex-1 flex-col gap-5 pb-36">
-      <header className="space-y-1">
-        <h1 className="text-lg font-semibold text-[color:var(--text)]">
-          Keuangan
-        </h1>
-        <p className="text-sm text-[color:var(--muted)]">
-          Saya hentikan bocor dulu. Baru mikir besar.
-        </p>
-      </header>
+  const hasFinanceData = Boolean(financeLog);
 
+  return (
+    <Page
+      title="Keuangan"
+      subtitle="Saya hentikan bocor dulu. Baru mikir besar."
+      withStickyCta
+    >
       {toast ? (
         <div
           role="status"
@@ -342,6 +341,15 @@ export default function FinancePage() {
         >
           {toast}
         </div>
+      ) : null}
+
+      {!hasFinanceData ? (
+        <EmptyState
+          title="Hari ini belum dicatat"
+          body="Saya bisa isi angka inti dulu, pelan-pelan."
+          primaryLabel="Buka Input Keuangan"
+          primaryHref="/input"
+        />
       ) : null}
 
       <div ref={ringkasanRef}>
@@ -600,6 +608,6 @@ export default function FinancePage() {
           </PrimaryButton>
         </div>
       </div>
-    </main>
+    </Page>
   );
 }

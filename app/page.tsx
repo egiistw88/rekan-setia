@@ -16,22 +16,15 @@ import NudgeCenter from "@/app/components/NudgeCenter";
 import BottomSheet from "@/app/components/ui/BottomSheet";
 import Card from "@/app/components/ui/Card";
 import IconButton from "@/app/components/ui/IconButton";
+import Badge from "@/app/components/ui/Badge";
+import EmptyState from "@/app/components/ui/EmptyState";
+import Page from "@/app/components/ui/Page";
 import { PRIMARY_BUTTON_CLASS } from "@/app/components/ui/PrimaryButton";
 
 const OVERALL_COPY: Record<Level, string> = {
   AMAN: "Hari ini saya cukup stabil.",
   RAWAN: "Hari ini saya rawan. Saya rapikan yang penting dulu.",
   KRITIS: "Hari ini saya kritis. Saya selamat dulu.",
-};
-
-const levelTone = (level: Level) => {
-  if (level === "KRITIS") {
-    return "bg-[color:var(--danger)]/15 text-[color:var(--danger)]";
-  }
-  if (level === "RAWAN") {
-    return "bg-[color:var(--warn)]/15 text-[color:var(--warn)]";
-  }
-  return "bg-[color:var(--ok)]/15 text-[color:var(--ok)]";
 };
 
 const getReasonFallback = (level: Level) => {
@@ -184,16 +177,11 @@ function HomeContent() {
 
   return (
     <>
-      <main className="flex w-full flex-1 flex-col gap-5 pb-32">
-        <header className="space-y-1">
-          <h1 className="text-lg font-semibold text-[color:var(--text)]">
-            Rekan Setia
-          </h1>
-          <p className="text-sm text-[color:var(--muted)]">
-            Saya menutup hari pelan, tapi pasti.
-          </p>
-        </header>
-
+      <Page
+        title="Rekan Setia"
+        subtitle="Saya menutup hari pelan, tapi pasti."
+        withStickyCta
+      >
         {toast ? (
           <div
             role="status"
@@ -214,17 +202,11 @@ function HomeContent() {
           <>
             <Card>
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="space-y-2">
                   <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
                     Status Hari Ini
                   </p>
-                  <span
-                    className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${levelTone(
-                      assessment.overallLevel,
-                    )}`}
-                  >
-                    {assessment.overallLevel}
-                  </span>
+                  <Badge level={assessment.overallLevel} />
                 </div>
                 <IconButton
                   type="button"
@@ -237,7 +219,7 @@ function HomeContent() {
               <p className="mt-3 text-sm font-semibold text-[color:var(--text)]">
                 {OVERALL_COPY[assessment.overallLevel]}
               </p>
-              <ul className="mt-2 space-y-1 text-sm text-[color:var(--muted)]">
+              <ul className="mt-2 space-y-1 text-sm leading-snug text-[color:var(--muted)]">
                 <li>- {primaryReason}</li>
                 {showDetails && secondaryReason ? (
                   <li>- {secondaryReason}</li>
@@ -416,13 +398,14 @@ function HomeContent() {
             ) : null}
           </>
         ) : (
-          <Card>
-            <p className="text-sm text-[color:var(--muted)]">
-              Saya belum punya peta hari ini, tapi saya tetap bisa mulai pelan.
-            </p>
-          </Card>
+          <EmptyState
+            title="Saya mulai pelan"
+            body="Belum ada peta hari ini. Saya bisa mulai dari input malam."
+            primaryLabel="Isi Input Malam"
+            primaryHref="/input"
+          />
         )}
-      </main>
+      </Page>
 
       <BottomSheet
         open={isSheetOpen}
@@ -499,7 +482,7 @@ function HomeContent() {
       </BottomSheet>
 
       <div
-        className="fixed inset-x-0 z-30 border-t border-[color:var(--border)] bg-[color:var(--bg)]/95 backdrop-blur"
+        className="fixed inset-x-0 z-30 border-t border-[color:var(--border)] bg-[color:var(--surface2)]/95 backdrop-blur"
         style={{ bottom: "calc(56px + env(safe-area-inset-bottom))" }}
       >
         <div className="mx-auto w-full max-w-[560px] px-5 py-3">

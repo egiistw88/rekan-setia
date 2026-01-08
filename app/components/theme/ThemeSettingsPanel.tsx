@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ThemeMode } from "@/lib/db";
+import Card from "@/app/components/ui/Card";
 import { updateSettings, useSettings } from "@/lib/settings";
 
 const MODE_OPTIONS: { value: ThemeMode; label: string; hint: string }[] = [
@@ -56,8 +57,8 @@ export default function ThemeSettingsPanel() {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-        <h2 className="text-sm font-semibold text-[color:var(--foreground)]">
+      <Card className="space-y-4">
+        <h2 className="text-sm font-semibold text-[color:var(--text)]">
           Mode tema
         </h2>
         <div className="space-y-3">
@@ -85,9 +86,9 @@ export default function ThemeSettingsPanel() {
                 }
               />
               <span>
-                <span className="block font-medium text-[color:var(--foreground)]">
-                  {option.label}
-                </span>
+              <span className="block font-medium text-[color:var(--text)]">
+                {option.label}
+              </span>
                 <span className="block text-xs text-[color:var(--muted)]">
                   {option.hint}
                 </span>
@@ -95,11 +96,11 @@ export default function ThemeSettingsPanel() {
             </label>
           ))}
         </div>
-      </section>
+      </Card>
 
       {draft?.themeMode === "AUTO_TIME" ? (
-        <section className="space-y-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-          <h2 className="text-sm font-semibold text-[color:var(--foreground)]">
+        <Card className="space-y-4">
+          <h2 className="text-sm font-semibold text-[color:var(--text)]">
             Jadwal gelap
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -113,7 +114,7 @@ export default function ThemeSettingsPanel() {
                     prev ? { ...prev, darkStart: event.target.value } : prev,
                   )
                 }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+                className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--text)]"
               />
             </label>
             <label className="space-y-2 text-sm text-[color:var(--muted)]">
@@ -126,17 +127,17 @@ export default function ThemeSettingsPanel() {
                     prev ? { ...prev, lightStart: event.target.value } : prev,
                   )
                 }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+                className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--text)]"
               />
             </label>
           </div>
           <p className="text-xs text-[color:var(--muted)]">
             Saya bebas mengatur ulang jam agar ritme tetap nyaman.
           </p>
-        </section>
+        </Card>
       ) : null}
 
-      <section className="flex flex-col gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+      <Card className="flex flex-col gap-3">
         <button
           type="button"
           onClick={handleSave}
@@ -148,7 +149,7 @@ export default function ThemeSettingsPanel() {
         <p className="text-xs text-[color:var(--muted)]">
           Saya atur ini supaya aplikasi mengikuti ritme hidup saya.
         </p>
-      </section>
+      </Card>
     </div>
   );
 }

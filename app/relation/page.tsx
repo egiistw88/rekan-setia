@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import PageShell from "@/app/components/PageShell";
+import Card from "@/app/components/ui/Card";
+import GhostButton from "@/app/components/ui/GhostButton";
+import Page from "@/app/components/ui/Page";
+import PrimaryButton from "@/app/components/ui/PrimaryButton";
 import { db, type RelationLogRecord } from "@/lib/db";
 import {
   getTodayDateKey,
@@ -29,14 +32,14 @@ const formatCountdown = (seconds: number) => {
 const getSteps = (mode: RitualMode) => {
   if (mode === 2) {
     return [
-      "0–1: Saya hadir. Saya dengar 1 kalimat.",
-      "1–2: Saya bilang terima kasih / minta maaf.",
+      "0-1: Saya hadir. Saya dengar 1 kalimat.",
+      "1-2: Saya bilang terima kasih atau minta maaf.",
     ];
   }
   return [
-    "Menit 0–2: Tarik napas + tatap + satu kalimat pembuka",
-    "Menit 2–5: Dengar 1 hal yang berat hari ini",
-    "Menit 5–7: Tutup dengan 1 bantuan kecil / rencana besok",
+    "Menit 0-2: Tarik napas + tatap + satu kalimat pembuka",
+    "Menit 2-5: Dengar 1 hal yang berat hari ini",
+    "Menit 5-7: Tutup dengan 1 bantuan kecil atau rencana besok",
   ];
 };
 
@@ -193,141 +196,185 @@ function RelationContent() {
   };
 
   const steps = getSteps(mode);
+  const recommendedTemplates = relationTemplates.slice(0, 3);
+  const extraTemplates = relationTemplates.slice(3);
+  const shouldSuggestTemplate =
+    !note.trim() && !selectedTemplateId && recommendedTemplates.length > 0;
 
   return (
-    <PageShell title="Ritual Hadir" description="Saya hadir sebentar, bukan untuk menyelesaikan semua.">
+    <Page
+      title="Ritual Hadir"
+      subtitle="Saya hadir sebentar, bukan untuk menyelesaikan semua."
+    >
       {toast ? (
         <div
           role="status"
           aria-live="polite"
-          className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 text-sm text-[color:var(--foreground)]"
+          className="rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm text-[color:var(--text)]"
         >
           {toast}
         </div>
       ) : null}
 
-      <section className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+      <Card>
         <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
           Mode Ritual
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 inline-flex rounded-full border border-[color:var(--border)] bg-[color:var(--surface2)] p-1 text-xs">
           <button
             type="button"
             onClick={() => handleModeChange(7)}
-            className={`rounded-full px-4 py-2 text-xs font-semibold ${
+            className={`rounded-full px-3 py-1 font-semibold transition ${
               mode === 7
                 ? "bg-[color:var(--accent)] text-white"
-                : "border border-[color:var(--border)] text-[color:var(--foreground)]"
+                : "text-[color:var(--text)]"
             }`}
           >
-            Ritual 7 menit
+            7 menit
           </button>
           <button
             type="button"
             onClick={() => handleModeChange(2)}
-            className={`rounded-full px-4 py-2 text-xs font-semibold ${
+            className={`rounded-full px-3 py-1 font-semibold transition ${
               mode === 2
                 ? "bg-[color:var(--accent)] text-white"
-                : "border border-[color:var(--border)] text-[color:var(--foreground)]"
+                : "text-[color:var(--text)]"
             }`}
           >
-            Darurat 2 menit
+            2 menit
           </button>
         </div>
-      </section>
+      </Card>
 
-      <section className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+      <Card>
         <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
-          SOP Langkah
+          Langkah singkat
         </p>
-        <div className="mt-3 space-y-2 text-sm text-[color:var(--foreground)]">
+        <div className="mt-3 space-y-2 text-sm text-[color:var(--text)]">
           {steps.map((step) => (
-            <div key={step} className="rounded-xl border border-[color:var(--border)] px-3 py-2">
+            <div
+              key={step}
+              className="rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2"
+            >
               {step}
             </div>
           ))}
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <span className="rounded-full border border-[color:var(--border)] px-4 py-2 text-sm font-semibold text-[color:var(--foreground)]">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-[color:var(--border)] px-4 py-2 text-sm font-semibold text-[color:var(--text)]">
             {formatCountdown(timeLeft)}
           </span>
           {!isRunning ? (
-            <button
-              type="button"
-              onClick={handleStart}
-              className="rounded-full bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-white"
-            >
-              Start
-            </button>
+            <PrimaryButton type="button" onClick={handleStart}>
+              Mulai
+            </PrimaryButton>
           ) : (
-            <button
-              type="button"
-              onClick={handlePause}
-              className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--foreground)]"
-            >
+            <GhostButton type="button" onClick={handlePause}>
               Pause
-            </button>
+            </GhostButton>
           )}
-          <button
-            type="button"
-            onClick={handleReset}
-            className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--foreground)]"
-          >
+          <GhostButton type="button" onClick={handleReset}>
             Reset
-          </button>
-          <button
-            type="button"
-            onClick={handleFinish}
-            disabled={!canFinish}
-            className="rounded-full bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          </GhostButton>
+          <PrimaryButton type="button" onClick={handleFinish} disabled={!canFinish}>
             Selesai
-          </button>
+          </PrimaryButton>
         </div>
-      </section>
-
-      <section className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-        <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
-          Template Kalimat
+        <p className="mt-2 text-xs text-[color:var(--muted)]">
+          Selesai aktif setelah 30 detik berjalan.
         </p>
+      </Card>
+
+      <Card>
+        <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
+          Template kalimat
+        </p>
+        {shouldSuggestTemplate ? (
+          <div className="mt-3 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface2)] px-3 py-2 text-xs text-[color:var(--muted)]">
+            <div className="flex items-center justify-between gap-3">
+              <span>
+                Saya bisa mulai dari "{recommendedTemplates[0].title}".
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  handleApplyTemplate(
+                    recommendedTemplates[0].id,
+                    recommendedTemplates[0].text,
+                  )
+                }
+                className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+              >
+                Pakai
+              </button>
+            </div>
+          </div>
+        ) : null}
         <div className="mt-3 grid gap-3">
-          {relationTemplates.map((template) => (
+          {recommendedTemplates.map((template) => (
             <div
               key={template.id}
-              className="rounded-xl border border-[color:var(--border)] px-4 py-3"
+              className="rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2"
             >
-              <p className="text-sm font-semibold text-[color:var(--foreground)]">
+              <p className="text-sm font-semibold text-[color:var(--text)]">
                 {template.title}
               </p>
-              <p className="mt-2 text-sm text-[color:var(--muted)]">
+              <p className="mt-1 text-xs text-[color:var(--muted)]">
                 {template.text}
               </p>
               <button
                 type="button"
                 onClick={() => handleApplyTemplate(template.id, template.text)}
-                className="mt-3 rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--foreground)]"
+                className="mt-2 rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
               >
                 Pakai
               </button>
             </div>
           ))}
         </div>
-      </section>
+        {extraTemplates.length > 0 ? (
+          <details className="mt-3 rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2 text-xs text-[color:var(--muted)]">
+            <summary className="cursor-pointer">Lihat semua</summary>
+            <div className="mt-3 grid gap-3">
+              {extraTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className="rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2"
+                >
+                  <p className="text-sm font-semibold text-[color:var(--text)]">
+                    {template.title}
+                  </p>
+                  <p className="mt-1 text-xs text-[color:var(--muted)]">
+                    {template.text}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyTemplate(template.id, template.text)}
+                    className="mt-2 rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--text)]"
+                  >
+                    Pakai
+                  </button>
+                </div>
+              ))}
+            </div>
+          </details>
+        ) : null}
+      </Card>
 
-      <section className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+      <Card>
         <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
-          Catatan Ringkas
+          Catatan ringkas
         </p>
-        <label className="mt-3 block space-y-2 text-sm text-[color:var(--muted)]">
+        <label className="mt-3 block space-y-2 text-xs text-[color:var(--muted)]">
           <span>Kalimat saya malam ini</span>
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
             rows={2}
-            className="w-full resize-none rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+            className="w-full resize-none rounded-[var(--radius-md)] border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--text)]"
           />
         </label>
-        <label className="mt-4 block space-y-2 text-sm text-[color:var(--muted)]">
+        <label className="mt-4 block space-y-2 text-xs text-[color:var(--muted)]">
           <span>Perasaan istri malam ini (opsional)</span>
           <select
             value={wifeMood}
@@ -337,7 +384,7 @@ function RelationContent() {
                 setWifeMood(value);
               }
             }}
-            className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+            className="w-full rounded-[var(--radius-md)] border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--text)]"
           >
             <option value="">Pilih</option>
             <option value="ringan">Ringan</option>
@@ -345,7 +392,7 @@ function RelationContent() {
             <option value="berat">Berat</option>
           </select>
         </label>
-        <label className="mt-4 flex items-center justify-between gap-3 text-sm text-[color:var(--foreground)]">
+        <label className="mt-4 flex items-center justify-between gap-3 text-sm text-[color:var(--text)]">
           <span>Saya sudah menyapa ibu hari ini</span>
           <input
             type="checkbox"
@@ -354,12 +401,12 @@ function RelationContent() {
             className="h-5 w-5 accent-[color:var(--accent)]"
           />
         </label>
-      </section>
+      </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/"
-          className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--muted)] transition hover:text-[color:var(--foreground)]"
+          className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs text-[color:var(--muted)] transition hover:text-[color:var(--text)]"
         >
           Kembali ke Dashboard
         </Link>
@@ -367,7 +414,7 @@ function RelationContent() {
           Kalau hari ini cuma sanggup 2 menit, itu tetap dihitung.
         </p>
       </div>
-    </PageShell>
+    </Page>
   );
 }
 
