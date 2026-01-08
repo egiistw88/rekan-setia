@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import PageShell from "@/app/components/PageShell";
+import { useEffect, useRef, useState } from "react";
+import Card from "@/app/components/ui/Card";
+import PrimaryButton from "@/app/components/ui/PrimaryButton";
 import {
   db,
   type CareerLogRecord,
@@ -11,6 +11,8 @@ import {
   type RelationLogRecord,
 } from "@/lib/db";
 import { getJakartaDateKey, getJakartaDateTime } from "@/lib/time";
+
+type WifeMood = "ringan" | "biasa" | "berat";
 
 type DailyForm = {
   sleepHours: number;
@@ -31,11 +33,13 @@ type FinanceForm = {
   rokokKopi: number;
   otherExpense: number;
   cashOnHandTonight: string;
+  note: string;
 };
 
 type RelationForm = {
   wifeNote: string;
   motherContactDone: boolean;
+  wifeMood: WifeMood | "";
 };
 
 type CareerForm = {
@@ -62,16 +66,25 @@ const defaultFinance: FinanceForm = {
   rokokKopi: 0,
   otherExpense: 0,
   cashOnHandTonight: "",
+  note: "",
 };
 
 const defaultRelation: RelationForm = {
   wifeNote: "",
   motherContactDone: false,
+  wifeMood: "",
 };
 
 const defaultCareer: CareerForm = {
   clientChatsSent: 0,
   designMinutes: 0,
+};
+
+const inputClass =
+  "w-full rounded-[var(--radius-md)] border border-[color:var(--border)] bg-transparent px-3 py-2 text-sm text-[color:var(--text)]";
+
+const clampInt = (value: number, min: number, max: number) => {
+  return Math.min(max, Math.max(min, value));
 };
 
 const floatValue = (value: string) => {
@@ -88,10 +101,6 @@ const intValue = (value: string) => {
   }
   const parsed = Math.round(Number(value));
   return Number.isNaN(parsed) ? 0 : parsed;
-};
-
-const clampInt = (value: number, min: number, max: number) => {
-  return Math.min(max, Math.max(min, value));
 };
 
 const nonNegativeInt = (value: string) => {
@@ -117,28 +126,25 @@ const optionalClampedInt = (value: string, min: number, max: number) => {
   return clampInt(parsed, min, max);
 };
 
-const formatTime = (iso?: string, wib?: string) => {
-  if (wib) {
-    return wib;
-  }
-  if (!iso) {
-    return "";
-  }
-  return new Date(iso).toLocaleTimeString("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+const isWifeMood = (value: string): value is WifeMood => {
+  return value === "ringan" || value === "biasa" || value === "berat";
 };
+
+const steps = [
+  { id: 1, title: "Stabilkan" },
+  { id: 2, title: "Keuangan" },
+  { id: 3, title: "Rumah + Arah" },
+];
 
 export default function InputPage() {
   const [dateKey] = useState(() => getJakartaDateKey());
+  const [currentStep, setCurrentStep] = useState(1);
   const [daily, setDaily] = useState<DailyForm>(defaultDaily);
   const [finance, setFinance] = useState<FinanceForm>(defaultFinance);
   const [relation, setRelation] = useState<RelationForm>(defaultRelation);
   const [career, setCareer] = useState<CareerForm>(defaultCareer);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState("");
   const [toast, setToast] = useState("");
   const toastTimeout = useRef<number | null>(null);
 
@@ -201,41 +207,19 @@ export default function InputPage() {
             financeLog?.cashOnHandTonight !== undefined
               ? String(financeLog.cashOnHandTonight)
               : "",
+          note: financeLog?.note ?? "",
         });
 
         setRelation({
           wifeNote: relationLog?.wifeNote ?? "",
           motherContactDone: relationLog?.motherContactDone ?? false,
+          wifeMood: relationLog?.wifeMood ?? "",
         });
 
         setCareer({
           clientChatsSent: careerLog?.clientChatsSent ?? 0,
           designMinutes: careerLog?.designMinutes ?? 0,
         });
-
-        const lastUpdatedWib = [
-          dailyLog?.updatedAtWib,
-          financeLog?.updatedAtWib,
-          relationLog?.updatedAtWib,
-          careerLog?.updatedAtWib,
-        ]
-          .filter(Boolean)
-          .sort()
-          .pop();
-
-        const lastUpdatedIso = [
-          dailyLog?.updatedAt,
-          financeLog?.updatedAt,
-          relationLog?.updatedAt,
-          careerLog?.updatedAt,
-        ]
-          .filter(Boolean)
-          .sort()
-          .pop();
-
-        setLastSavedAt(
-          formatTime(lastUpdatedIso, lastUpdatedWib as string | undefined),
-        );
       } catch (error) {
         console.error(error);
         if (active) {
@@ -255,32 +239,16 @@ export default function InputPage() {
     };
   }, [dateKey]);
 
-  const hasChanges = useMemo(() => {
-    return (
-      daily.sleepHours !== 0 ||
-      daily.mealsCount !== 0 ||
-      daily.breathSessions !== 0 ||
-      daily.dropModeRuns !== 0 ||
-      daily.moodScore !== "" ||
-      daily.subuhDone ||
-      daily.ritualDone ||
-      daily.freezeMode ||
-      finance.incomeOjol !== 0 ||
-      finance.expenseMakan !== 0 ||
-      finance.expenseBensin !== 0 ||
-      finance.topupOjol !== 0 ||
-      finance.rokokKopi !== 0 ||
-      finance.otherExpense !== 0 ||
-      finance.cashOnHandTonight !== "" ||
-      relation.wifeNote !== "" ||
-      relation.motherContactDone ||
-      career.clientChatsSent !== 0 ||
-      career.designMinutes !== 0
-    );
-  }, [career, daily, finance, relation]);
+  const totalExpense =
+    finance.expenseMakan +
+    finance.expenseBensin +
+    finance.topupOjol +
+    finance.rokokKopi +
+    finance.otherExpense;
+  const netToday = finance.incomeOjol - totalExpense;
 
   const handleSave = async () => {
-    if (isSaving) {
+    if (isSaving || isLoading) {
       return;
     }
 
@@ -296,14 +264,15 @@ export default function InputPage() {
 
       const dailyRecord: DailyLogRecord = {
         dateKey,
-        sleepHours: daily.sleepHours,
-        mealsCount: daily.mealsCount,
-        breathSessions: daily.breathSessions,
-        dropModeRuns: daily.dropModeRuns,
+        sleepHours: Math.max(0, daily.sleepHours),
+        mealsCount: clampInt(daily.mealsCount, 0, 10),
+        breathSessions: clampInt(daily.breathSessions, 0, 10),
+        dropModeRuns: clampInt(daily.dropModeRuns, 0, 10),
         moodScore: optionalClampedInt(daily.moodScore, 1, 5),
         subuhDone: daily.subuhDone,
         ritualDone: daily.ritualDone,
         freezeMode: daily.freezeMode,
+        spiritual: existingDaily?.spiritual,
         updatedAt: nowIso,
         updatedAtWib,
         planChecks: existingDaily?.planChecks,
@@ -321,7 +290,7 @@ export default function InputPage() {
         updatedAt: nowIso,
         updatedAtWib,
         freezeModeApplied: existingFinance?.freezeModeApplied,
-        note: existingFinance?.note,
+        note: finance.note.trim() || undefined,
       };
 
       const relationRecord: RelationLogRecord = {
@@ -330,7 +299,7 @@ export default function InputPage() {
         lastTemplateId: existingRelation?.lastTemplateId,
         ritualDurationMin: existingRelation?.ritualDurationMin,
         ritualCompletedAtWib: existingRelation?.ritualCompletedAtWib,
-        wifeMood: existingRelation?.wifeMood,
+        wifeMood: relation.wifeMood ? relation.wifeMood : undefined,
         motherContactDone: relation.motherContactDone,
         updatedAt: nowIso,
         updatedAtWib,
@@ -350,7 +319,6 @@ export default function InputPage() {
         db.relationLogs.put(relationRecord),
         db.careerLogs.put(careerRecord),
       ]);
-      setLastSavedAt(formatTime(nowIso, updatedAtWib));
       showToast("Saya sudah menutup hari dengan rapi.");
     } catch (error) {
       console.error(error);
@@ -360,32 +328,65 @@ export default function InputPage() {
     }
   };
 
+  const progressPercent =
+    steps.length <= 1
+      ? 100
+      : ((currentStep - 1) / (steps.length - 1)) * 100;
+
   return (
-    <PageShell
-      title="Input Malam"
-      description="Saya isi ini malam ini, supaya besok saya tidak bingung."
-    >
+    <main className="flex w-full flex-1 flex-col gap-5 pb-36">
+      <header className="space-y-1">
+        <h1 className="text-lg font-semibold text-[color:var(--text)]">
+          Input Malam
+        </h1>
+        <p className="text-sm text-[color:var(--muted)]">
+          Saya tutup hari pelan, tapi rapi.
+        </p>
+      </header>
+
       {toast ? (
         <div
           role="status"
           aria-live="polite"
-          className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 text-sm text-[color:var(--foreground)]"
+          className="rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm text-[color:var(--text)]"
         >
           {toast}
         </div>
       ) : null}
 
-      <div className="space-y-4">
-        <details
-          open
-          className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)]"
-        >
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-[color:var(--foreground)]">
-            Mental & Energi
-          </summary>
-          <div className="space-y-4 border-t border-[color:var(--border)] px-4 py-4">
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Tidur saya (jam)</span>
+      <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-2 text-[11px] text-[color:var(--muted)]">
+          {steps.map((step) => (
+            <div key={step.id} className="flex items-center gap-2">
+              <span
+                className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold ${
+                  step.id === currentStep
+                    ? "border-transparent bg-[color:var(--accent)] text-white"
+                    : "border-[color:var(--border)] text-[color:var(--muted)]"
+                }`}
+              >
+                {step.id}
+              </span>
+              <span>{step.title}</span>
+            </div>
+          ))}
+        </div>
+        <div className="h-1 w-full rounded-full bg-[color:var(--surface2)]">
+          <div
+            className="h-full rounded-full bg-[color:var(--accent)]"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      {currentStep === 1 ? (
+        <Card>
+          <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
+            Stabilkan
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Tidur (jam)</span>
               <input
                 type="number"
                 min={0}
@@ -397,11 +398,11 @@ export default function InputPage() {
                     sleepHours: Math.max(0, floatValue(event.target.value)),
                   }))
                 }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+                className={inputClass}
               />
             </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Makan saya (kali)</span>
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Makan (kali)</span>
               <input
                 type="number"
                 min={0}
@@ -412,66 +413,235 @@ export default function InputPage() {
                     mealsCount: nonNegativeInt(event.target.value),
                   }))
                 }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+                className={inputClass}
               />
             </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Napas sadar (sesi)</span>
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Napas sadar</span>
               <input
                 type="number"
                 min={0}
+                max={10}
                 value={daily.breathSessions}
                 onChange={(event) =>
                   setDaily((prev) => ({
                     ...prev,
-                    breathSessions: nonNegativeInt(event.target.value),
+                    breathSessions: clampInt(intValue(event.target.value), 0, 10),
                   }))
                 }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+                className={inputClass}
               />
             </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Drop Mode hari ini (berapa kali)</span>
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Drop Mode</span>
               <input
                 type="number"
                 min={0}
+                max={10}
                 value={daily.dropModeRuns}
                 onChange={(event) =>
                   setDaily((prev) => ({
                     ...prev,
-                    dropModeRuns: nonNegativeInt(event.target.value),
+                    dropModeRuns: clampInt(intValue(event.target.value), 0, 10),
                   }))
                 }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
-              />
-            </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Seberat apa hari saya?</span>
-              <input
-                type="number"
-                min={1}
-                max={5}
-                value={daily.moodScore}
-                onChange={(event) =>
-                  setDaily((prev) => ({
-                    ...prev,
-                    moodScore: event.target.value,
-                  }))
-                }
-                placeholder="1-5 (opsional)"
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+                className={inputClass}
               />
             </label>
           </div>
-        </details>
 
-        <details className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)]">
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-[color:var(--foreground)]">
-            Spiritual
-          </summary>
-          <div className="border-t border-[color:var(--border)] px-4 py-4">
-            <label className="flex items-center justify-between gap-3 text-sm text-[color:var(--foreground)]">
-              <span>Saya pegang Subuh</span>
+          <details className="mt-4 rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2">
+            <summary className="cursor-pointer text-xs text-[color:var(--muted)]">
+              Tambahan
+            </summary>
+            <div className="mt-3">
+              <label className="space-y-2 text-xs text-[color:var(--muted)]">
+                <span>Skala berat hari (1-5)</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={daily.moodScore}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value.trim() === "") {
+                      setDaily((prev) => ({ ...prev, moodScore: "" }));
+                      return;
+                    }
+                    const parsed = Math.round(Number(value));
+                    if (Number.isNaN(parsed)) {
+                      return;
+                    }
+                    const clamped = clampInt(parsed, 1, 5);
+                    setDaily((prev) => ({ ...prev, moodScore: String(clamped) }));
+                  }}
+                  placeholder="Opsional"
+                  className={inputClass}
+                />
+              </label>
+            </div>
+          </details>
+
+          <p className="mt-4 text-xs text-[color:var(--muted)]">
+            Kalau saya cuma isi ini saja, itu sudah cukup.
+          </p>
+        </Card>
+      ) : null}
+
+      {currentStep === 2 ? (
+        <Card>
+          <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
+            Keuangan
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Masuk ojol</span>
+              <input
+                type="number"
+                min={0}
+                value={finance.incomeOjol}
+                onChange={(event) =>
+                  setFinance((prev) => ({
+                    ...prev,
+                    incomeOjol: nonNegativeInt(event.target.value),
+                  }))
+                }
+                className={inputClass}
+              />
+            </label>
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Keluar makan</span>
+              <input
+                type="number"
+                min={0}
+                value={finance.expenseMakan}
+                onChange={(event) =>
+                  setFinance((prev) => ({
+                    ...prev,
+                    expenseMakan: nonNegativeInt(event.target.value),
+                  }))
+                }
+                className={inputClass}
+              />
+            </label>
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Keluar bensin</span>
+              <input
+                type="number"
+                min={0}
+                value={finance.expenseBensin}
+                onChange={(event) =>
+                  setFinance((prev) => ({
+                    ...prev,
+                    expenseBensin: nonNegativeInt(event.target.value),
+                  }))
+                }
+                className={inputClass}
+              />
+            </label>
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Topup ojol</span>
+              <input
+                type="number"
+                min={0}
+                value={finance.topupOjol}
+                onChange={(event) =>
+                  setFinance((prev) => ({
+                    ...prev,
+                    topupOjol: nonNegativeInt(event.target.value),
+                  }))
+                }
+                className={inputClass}
+              />
+            </label>
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Rokok/kopi</span>
+              <input
+                type="number"
+                min={0}
+                value={finance.rokokKopi}
+                onChange={(event) =>
+                  setFinance((prev) => ({
+                    ...prev,
+                    rokokKopi: nonNegativeInt(event.target.value),
+                  }))
+                }
+                className={inputClass}
+              />
+            </label>
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Lain-lain</span>
+              <input
+                type="number"
+                min={0}
+                value={finance.otherExpense}
+                onChange={(event) =>
+                  setFinance((prev) => ({
+                    ...prev,
+                    otherExpense: nonNegativeInt(event.target.value),
+                  }))
+                }
+                className={inputClass}
+              />
+            </label>
+          </div>
+
+          <label className="mt-3 space-y-2 text-xs text-[color:var(--muted)]">
+            <span>Uang di tangan malam ini (opsional)</span>
+            <input
+              type="number"
+              min={0}
+              value={finance.cashOnHandTonight}
+              onChange={(event) =>
+                setFinance((prev) => ({
+                  ...prev,
+                  cashOnHandTonight: event.target.value,
+                }))
+              }
+              className={inputClass}
+            />
+          </label>
+
+          <div className="mt-4 rounded-[var(--radius-md)] border border-[color:var(--border)] bg-[color:var(--surface2)] px-3 py-2 text-sm">
+            <span className="text-[color:var(--muted)]">Net hari ini: </span>
+            <span
+              className={
+                netToday < 0
+                  ? "text-[color:var(--warn)]"
+                  : "text-[color:var(--ok)]"
+              }
+            >
+              {netToday}
+            </span>
+          </div>
+
+          <details className="mt-4 rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2">
+            <summary className="cursor-pointer text-xs text-[color:var(--muted)]">
+              Tambahan
+            </summary>
+            <label className="mt-3 space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Catatan singkat (opsional)</span>
+              <textarea
+                value={finance.note}
+                onChange={(event) =>
+                  setFinance((prev) => ({ ...prev, note: event.target.value }))
+                }
+                rows={2}
+                className={inputClass}
+              />
+            </label>
+          </details>
+        </Card>
+      ) : null}
+
+      {currentStep === 3 ? (
+        <Card>
+          <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
+            Rumah + Arah
+          </p>
+          <div className="mt-4 space-y-3">
+            <label className="flex items-center justify-between gap-3 text-sm text-[color:var(--text)]">
+              <span>Pegang Subuh</span>
               <input
                 type="checkbox"
                 checked={daily.subuhDone}
@@ -484,16 +654,8 @@ export default function InputPage() {
                 className="h-5 w-5 accent-[color:var(--accent)]"
               />
             </label>
-          </div>
-        </details>
-
-        <details className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)]">
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-[color:var(--foreground)]">
-            Relasi
-          </summary>
-          <div className="space-y-4 border-t border-[color:var(--border)] px-4 py-4">
-            <label className="flex items-center justify-between gap-3 text-sm text-[color:var(--foreground)]">
-              <span>Saya hadir 7 menit untuk istri</span>
+            <label className="flex items-center justify-between gap-3 text-sm text-[color:var(--text)]">
+              <span>Hadir 7 menit untuk istri</span>
               <input
                 type="checkbox"
                 checked={daily.ritualDone}
@@ -506,7 +668,7 @@ export default function InputPage() {
                 className="h-5 w-5 accent-[color:var(--accent)]"
               />
             </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
               <span>1 kalimat untuk saya ingat</span>
               <textarea
                 value={relation.wifeNote}
@@ -517,12 +679,12 @@ export default function InputPage() {
                   }))
                 }
                 placeholder="Yang paling berat hari ini..."
-                rows={3}
-                className="w-full resize-none rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+                rows={2}
+                className={inputClass}
               />
             </label>
-            <label className="flex items-center justify-between gap-3 text-sm text-[color:var(--foreground)]">
-              <span>Saya menyapa ibu hari ini</span>
+            <label className="flex items-center justify-between gap-3 text-sm text-[color:var(--text)]">
+              <span>Menyapa ibu</span>
               <input
                 type="checkbox"
                 checked={relation.motherContactDone}
@@ -536,129 +698,10 @@ export default function InputPage() {
               />
             </label>
           </div>
-        </details>
 
-        <details className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)]">
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-[color:var(--foreground)]">
-            Keuangan
-          </summary>
-          <div className="space-y-4 border-t border-[color:var(--border)] px-4 py-4">
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Masuk ojol hari ini (Rp)</span>
-              <input
-                type="number"
-                min={0}
-                value={finance.incomeOjol}
-                onChange={(event) =>
-                  setFinance((prev) => ({
-                    ...prev,
-                    incomeOjol: nonNegativeInt(event.target.value),
-                  }))
-                }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
-              />
-            </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Keluar makan (Rp)</span>
-              <input
-                type="number"
-                min={0}
-                value={finance.expenseMakan}
-                onChange={(event) =>
-                  setFinance((prev) => ({
-                    ...prev,
-                    expenseMakan: nonNegativeInt(event.target.value),
-                  }))
-                }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
-              />
-            </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Keluar bensin (Rp)</span>
-              <input
-                type="number"
-                min={0}
-                value={finance.expenseBensin}
-                onChange={(event) =>
-                  setFinance((prev) => ({
-                    ...prev,
-                    expenseBensin: nonNegativeInt(event.target.value),
-                  }))
-                }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
-              />
-            </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Topup saldo ojol (Rp)</span>
-              <input
-                type="number"
-                min={0}
-                value={finance.topupOjol}
-                onChange={(event) =>
-                  setFinance((prev) => ({
-                    ...prev,
-                    topupOjol: nonNegativeInt(event.target.value),
-                  }))
-                }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
-              />
-            </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Rokok/kopi (Rp)</span>
-              <input
-                type="number"
-                min={0}
-                value={finance.rokokKopi}
-                onChange={(event) =>
-                  setFinance((prev) => ({
-                    ...prev,
-                    rokokKopi: nonNegativeInt(event.target.value),
-                  }))
-                }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
-              />
-            </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Lain-lain (Rp)</span>
-              <input
-                type="number"
-                min={0}
-                value={finance.otherExpense}
-                onChange={(event) =>
-                  setFinance((prev) => ({
-                    ...prev,
-                    otherExpense: nonNegativeInt(event.target.value),
-                  }))
-                }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
-              />
-            </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Uang di tangan malam ini (perkiraan)</span>
-              <input
-                type="number"
-                min={0}
-                value={finance.cashOnHandTonight}
-                onChange={(event) =>
-                  setFinance((prev) => ({
-                    ...prev,
-                    cashOnHandTonight: event.target.value,
-                  }))
-                }
-                placeholder="Opsional"
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
-              />
-            </label>
-          </div>
-        </details>
-
-        <details className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)]">
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-[color:var(--foreground)]">
-            Karier
-          </summary>
-          <div className="space-y-4 border-t border-[color:var(--border)] px-4 py-4">
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Chat klien terkirim (0-3)</span>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Chat klien (0-3)</span>
               <input
                 type="number"
                 min={0}
@@ -671,11 +714,11 @@ export default function InputPage() {
                     clientChatsSent: clampInt(intValue(event.target.value), 0, 3),
                   }))
                 }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+                className={inputClass}
               />
             </label>
-            <label className="space-y-2 text-sm text-[color:var(--muted)]">
-              <span>Waktu desain (menit)</span>
+            <label className="space-y-2 text-xs text-[color:var(--muted)]">
+              <span>Desain (menit)</span>
               <input
                 type="number"
                 min={0}
@@ -688,38 +731,90 @@ export default function InputPage() {
                     designMinutes: clampInt(intValue(event.target.value), 0, 60),
                   }))
                 }
-                className="w-full rounded-xl border border-[color:var(--border)] bg-transparent px-3 py-2 text-[color:var(--foreground)]"
+                className={inputClass}
               />
             </label>
           </div>
-        </details>
-      </div>
 
-      <div className="space-y-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+          <details className="mt-4 rounded-[var(--radius-md)] border border-[color:var(--border)] px-3 py-2">
+            <summary className="cursor-pointer text-xs text-[color:var(--muted)]">
+              Tambahan
+            </summary>
+            <div className="mt-3 space-y-3">
+              <label className="space-y-2 text-xs text-[color:var(--muted)]">
+                <span>Perasaan istri malam ini</span>
+                <select
+                  value={relation.wifeMood}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === "" || isWifeMood(value)) {
+                      setRelation((prev) => ({ ...prev, wifeMood: value }));
+                    }
+                  }}
+                  className={inputClass}
+                >
+                  <option value="">Pilih</option>
+                  <option value="ringan">Ringan</option>
+                  <option value="biasa">Biasa</option>
+                  <option value="berat">Berat</option>
+                </select>
+              </label>
+              <label className="flex items-center justify-between gap-3 text-sm text-[color:var(--text)]">
+                <span>Freeze mode</span>
+                <input
+                  type="checkbox"
+                  checked={daily.freezeMode}
+                  onChange={(event) =>
+                    setDaily((prev) => ({
+                      ...prev,
+                      freezeMode: event.target.checked,
+                    }))
+                  }
+                  className="h-5 w-5 accent-[color:var(--accent)]"
+                />
+              </label>
+            </div>
+          </details>
+        </Card>
+      ) : null}
+
+      <div className="flex items-center justify-between text-xs text-[color:var(--muted)]">
         <button
           type="button"
-          onClick={handleSave}
-          disabled={isLoading || isSaving}
-          className="w-full rounded-xl bg-[color:var(--accent)] px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSaving ? "Menyimpan..." : "Simpan"}
-        </button>
-        <Link
-          href="/"
-          className="block w-full rounded-xl border border-[color:var(--border)] px-4 py-3 text-center text-sm text-[color:var(--muted)] transition hover:text-[color:var(--foreground)]"
+          onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
+          disabled={currentStep === 1}
+          className="rounded-full border border-[color:var(--border)] px-3 py-1 disabled:opacity-40"
         >
           Kembali
-        </Link>
-        <div className="text-xs text-[color:var(--muted)]">
-          {lastSavedAt
-            ? `Terakhir disimpan: ${lastSavedAt}`
-            : isLoading
-              ? "Memuat catatan..."
-              : hasChanges
-                ? "Belum disimpan malam ini."
-                : "Belum ada catatan untuk hari ini."}
+        </button>
+        <button
+          type="button"
+          onClick={() => setCurrentStep((prev) => Math.min(3, prev + 1))}
+          disabled={currentStep === 3}
+          className="rounded-full border border-[color:var(--border)] px-3 py-1 disabled:opacity-40"
+        >
+          Lanjut
+        </button>
+      </div>
+
+      <div
+        className="fixed inset-x-0 z-30 border-t border-[color:var(--border)] bg-[color:var(--surface2)]/95 backdrop-blur"
+        style={{ bottom: "calc(56px + env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto w-full max-w-[560px] px-5 py-3">
+          <PrimaryButton
+            type="button"
+            onClick={handleSave}
+            disabled={isLoading || isSaving}
+            className="w-full"
+          >
+            {isSaving ? "Menyimpan..." : "Simpan"}
+          </PrimaryButton>
+          <p className="mt-2 text-xs text-[color:var(--muted)]">
+            Autosave tidak dipakai - saya simpan saat siap.
+          </p>
         </div>
       </div>
-    </PageShell>
+    </main>
   );
 }
